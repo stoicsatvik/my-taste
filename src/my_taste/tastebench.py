@@ -73,3 +73,23 @@ def run_sealed_context_benchmark() -> dict[str, float]:
         "v0_2_brier": fsum(context_brier) / len(context_brier),
         "sealed_pairs": float(sum(len(case.sealed) for case in deterministic_context_cases())),
     }
+
+
+def run_domain_leakage_check() -> dict[str, float]:
+    """Falsify accidental transfer of learned preference weights across domains."""
+    preferred = "Latency fell from 420ms to 260ms."
+    rejected = "We leverage seamless strategic capabilities."
+    context = "status update"
+    with TemporaryDirectory() as directory:
+        engine = TasteEngine(Path(directory) / "leakage.db")
+        control_before = engine.pairwise_probability(preferred, rejected, domain="design", context=context)
+        for _ in range(4):
+            engine.observe_choice(preferred, rejected, domain="writing", context=context)
+        trained = engine.pairwise_probability(preferred, rejected, domain="writing", context=context)
+        control_after = engine.pairwise_probability(preferred, rejected, domain="design", context=context)
+    return {
+        "trained_domain_probability": trained,
+        "control_before": control_before,
+        "control_after": control_after,
+        "absolute_leakage": abs(control_after - control_before),
+    }

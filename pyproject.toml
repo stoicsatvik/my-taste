@@ -1,0 +1,29 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "my-taste"
+version = "0.1.0"
+description = "A local-first, user-owned preference layer for AI agents."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "Satvik"}]
+dependencies = [
+  "mcp[cli]>=2,<3",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+my-taste = "my_taste.cli:main"
+my-taste-mcp = "my_taste.mcp_server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/my_taste"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

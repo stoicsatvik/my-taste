@@ -1,118 +1,31 @@
 # My Taste — Unified Foundry State
 
 ## Mission
+Build a local-first, user-owned preference layer optimizing `P(candidate_i > candidate_j | user, domain, context, evidence, history)`.
 
-Build a local-first, user-owned multimodal preference layer that predicts what a user would choose, then exposes that learned taste to AI agents through MCP.
+## Frozen baseline
+- v0.1 baseline commit: `8b2a69b6c64962c11a9372e6940800579fe36fd6`
+- Evidence: SQLite persistence, pairwise/edit learning, interpretable text ranking, CLI/MCP, 5 deterministic tests reported passing before V0.2.
+- Status: **SUPPORTED / FROZEN BASELINE**.
 
-Core objective:
+## Current challenger
+- Branch: `foundry/v0.2-context-benchmark`
+- Head before this ledger update: `a278d894f8341d9ffcc5fe9052f690765cfd6d35`
+- Objective: context-conditioned preference learning plus matched held-out pairwise evaluation.
+- Added: normalized context-specific weight overlays while retaining domain-global weights; context-aware pairwise probability; deterministic synthetic benchmark comparing no-context vs contextual scoring with accuracy and Brier metrics; tests for same-pair context reversal and cross-domain isolation.
+- Privacy boundary: benchmark fixtures are synthetic. No private chats, screenshots, exports, credentials, or identifying user evidence are committed.
 
-`P(candidate_i > candidate_j | user, domain, context, evidence, history)`
+## Validation / claim boundary
+- Architecture: **SUPPORTED** by code inspection and deterministic test contracts.
+- Runtime result at challenger head: **NOT YET PROVEN**. Tests have been committed but no runner result is available in this foundry cycle, therefore no benchmark numbers are claimed.
+- Promotion: **NOT YET PROVEN**. v0.2 must beat or materially improve calibration over frozen v0.1 on a deterministic sealed benchmark under matched evidence budgets and preserve v0.1 tests.
+- MCP interoperability: **NOT YET PROVEN**.
 
-This is a preference-learning system, not merely a memory store.
+## Blockers / falsification targets
+1. Execute all baseline + challenger tests.
+2. Freeze a larger sealed synthetic pairwise split with contexts withheld from training examples rather than relying on the tiny smoke fixture.
+3. Measure accuracy, Brier/calibration, abstention, sample efficiency, context drift and domain leakage under matched budgets.
+4. Add provenance retrieval and contradiction/drift tracking only after the benchmark can expose regressions.
 
-## Current status
-
-**Claim status: SUPPORTED**
-
-v0.1 has a working text preference baseline:
-
-- SQLite evidence persistence
-- explicit pairwise choice learning
-- edit-as-preference learning
-- interpretable text feature extraction
-- candidate ranking
-- explanations and confidence estimates
-- CLI
-- MCP server bindings
-- deterministic unit tests
-
-Current baseline tests: 5 passing.
-
-## Foundry doctrine for this repo
-
-1. Make substantive tested progress, not cosmetic commits.
-2. Preserve a simple baseline while introducing stronger challengers.
-3. Evaluate on held-out pairwise choices before claiming personalization gains.
-4. Keep raw personal evidence local-first by default.
-5. Every learned preference must retain provenance to its evidence.
-6. Separate domains and contexts; do not silently generalize writing taste into unrelated domains.
-7. Track uncertainty, contradictions, preference drift, and abstention rather than forcing confident predictions.
-8. Prefer pluggable encoders/rankers so the protocol and evidence store survive model changes.
-9. Never commit private user evidence, message exports, screenshots, credentials, or sensitive personal datasets to this public repository.
-10. Public fixtures must be synthetic, consented, or safely anonymized.
-
-## Highest-priority build sequence
-
-### V0.2 — Context + provenance
-
-- context tags and context-conditioned scoring
-- provenance retrieval API
-- contradiction tracking
-- preference confidence/calibration
-- JSON export/import
-- domain permission scopes
-- pluggable text encoder interface
-- held-out pairwise benchmark harness
-
-Promotion gate: context-aware challenger must outperform or materially improve calibration over v0.1 on deterministic/sealed evaluation without breaking existing tests.
-
-### V0.3 — Screenshots + images
-
-- image/screenshot evidence schema
-- perceptual hash + metadata
-- vision adapter interface
-- visual preference dimensions such as hierarchy, density, spacing, typography, composition
-- pairwise visual ranking
-- image TasteBench fixtures
-
-Promotion gate: demonstrate reproducible held-out visual preference prediction above simple metadata/profile baselines.
-
-### V0.4 — Video + audio
-
-- frame/scene sampling
-- transcript ingestion
-- pacing/editing features
-- audio adapter
-- multimodal fusion
-
-Promotion gate: multimodal model must beat single-modality baselines on sealed held-out choices under matched budgets.
-
-### V0.5 — Portable taste layer
-
-- Python/TypeScript SDKs
-- agent-readable resources
-- scoped taste permissions
-- browser extension feedback capture
-- platform-history importers
-
-## Research track — TasteBench
-
-Compare under matched evidence and budgets:
-
-1. base model with no user context
-2. written preference profile
-3. RAG over user memories
-4. My Taste v0.1 interpretable ranker
-5. contextual My Taste
-6. multimodal My Taste
-
-Primary metrics:
-
-- pairwise preference accuracy
-- calibration / Brier score
-- abstention quality
-- sample efficiency
-- adaptation to preference drift
-- domain leakage / unwanted generalization
-
-## Current blockers / unknowns
-
-- No context-conditioned model yet.
-- No sealed benchmark dataset yet.
-- No screenshot/image implementation yet.
-- No contradiction/drift model yet.
-- MCP integration exists but needs client-side interoperability validation.
-
-## Next best move
-
-Build V0.2 context-conditioned preference learning plus a deterministic held-out pairwise benchmark before adding vision complexity.
+## Highest-EV next move
+Run the full test suite and benchmark; if green, strengthen TasteBench with deterministic train/held-out splits and explicit no-context/context promotion thresholds before adding vision.

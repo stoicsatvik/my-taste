@@ -16,8 +16,14 @@ class TasteBenchCase:
     sealed: tuple[Pair, ...]
 
 
+def _pairs(context: str, preferred: tuple[str, ...], rejected: tuple[str, ...]) -> tuple[Pair, ...]:
+    if len(preferred) != len(rejected):
+        raise ValueError("preferred/rejected fixture lengths must match")
+    return tuple(Pair(a, b, context) for a, b in zip(preferred, rejected))
+
+
 def deterministic_context_cases() -> tuple[TasteBenchCase, ...]:
-    """Synthetic cases with sealed wording withheld from training evidence."""
+    """Synthetic train/sealed families. Sealed wording is withheld from training evidence."""
     return (
         TasteBenchCase(
             domain="writing",
@@ -28,8 +34,12 @@ def deterministic_context_cases() -> tuple[TasteBenchCase, ...]:
                 Pair("Tonight we celebrate the people who carried this work forward.", "Output rose 6%.", "ceremonial speech"),
             ),
             sealed=(
-                Pair("Errors fell 19% after validation moved earlier.", "We enable holistic synergistic outcomes.", "status update"),
-                Pair("Today we recognise the craft, patience, and care behind this milestone.", "Throughput rose 9%.", "ceremonial speech"),
+                *_pairs("status update",
+                    ("Errors fell 19% after validation moved earlier.", "Build time dropped from 11 minutes to 8 minutes.", "Cache misses fell 14% after the index change.", "The migration completed with zero failed records."),
+                    ("We enable holistic synergistic outcomes.", "Our strategy unlocks integrated excellence.", "The platform empowers transformative capabilities.", "We leverage a seamless innovation ecosystem.")),
+                *_pairs("ceremonial speech",
+                    ("Today we recognise the craft, patience, and care behind this milestone.", "This evening belongs to everyone who kept the work moving through difficult weeks.", "We honour the quiet discipline that turned an idea into a shared achievement.", "Let this milestone recognise the people whose steady effort made it possible."),
+                    ("Throughput rose 9%.", "Attendance increased 7%.", "Output reached 1,240 units.", "Completion time fell 5%.")),
             ),
         ),
         TasteBenchCase(
@@ -41,8 +51,46 @@ def deterministic_context_cases() -> tuple[TasteBenchCase, ...]:
                 Pair("The first paragraph should orient the reader before compressing the argument.", "Lead with one metric.", "essay introduction"),
             ),
             sealed=(
-                Pair("Queue depth returned to normal at 14:32.", "We unlock resilient operational synergy.", "incident note"),
-                Pair("Begin by locating the problem in its historical setting before stating the thesis.", "State the thesis immediately.", "essay introduction"),
+                *_pairs("incident note",
+                    ("Queue depth returned to normal at 14:32.", "The worker recovered after the second restart at 09:18.", "Five writes timed out before the connection pool was reset.", "Error rate returned below 1% after the rollback."),
+                    ("We unlock resilient operational synergy.", "Our solution accelerates strategic transformation.", "We deliver adaptive next-generation excellence.", "The ecosystem enables seamless operational value.")),
+                *_pairs("essay introduction",
+                    ("Begin by locating the problem in its historical setting before stating the thesis.", "Establish the institutional context before narrowing to the central argument.", "Orient the reader to the competing explanations before presenting the claim.", "Introduce the underlying tension before compressing it into the thesis."),
+                    ("State the thesis immediately.", "Lead with one statistic.", "Open with the conclusion.", "Start with the final recommendation.")),
+            ),
+        ),
+        TasteBenchCase(
+            domain="writing",
+            train=(
+                Pair("Use the smallest reproducible example and include the observed exception.", "The system is broken and weird.", "bug report"),
+                Pair("Expected 201; received 409 after the second identical request.", "It fails sometimes.", "bug report"),
+                Pair("Could you send the revised figures by Thursday afternoon?", "Send this ASAP.", "client request"),
+                Pair("Please confirm whether the revised scope still fits the quoted budget.", "Need confirmation now.", "client request"),
+            ),
+            sealed=(
+                *_pairs("bug report",
+                    ("Reproduction: submit the same token twice; expected idempotent success, observed 409.", "On version 2.4.1 the parser raises ValueError for an empty optional field.", "Expected the retry counter to stop at three; observed five requests.", "The failure occurs only when the fixture contains a quoted comma."),
+                    ("The API acts strange.", "Parsing is kind of broken.", "Retries seem wrong.", "CSV support does not work.")),
+                *_pairs("client request",
+                    ("Please share the approved copy before Friday so the build can remain on schedule.", "Could you confirm the final attendee count by 3 PM tomorrow?", "Please review the attached scope and flag any changes before we estimate delivery.", "Could you send the missing dimensions when convenient today?"),
+                    ("Need the copy immediately.", "Send attendee count ASAP.", "Approve scope now.", "Send dimensions.")),
+            ),
+        ),
+        TasteBenchCase(
+            domain="writing",
+            train=(
+                Pair("Decision: retain the current cache. Reason: the measured hit-rate gain does not offset invalidation complexity.", "We talked about caching and decided stuff.", "decision record"),
+                Pair("Decision: postpone migration until rollback coverage reaches the agreed threshold.", "Migration is delayed for now.", "decision record"),
+                Pair("First verify the input checksum, then rerun the importer with dry-run enabled.", "Try importing it again.", "procedure"),
+                Pair("Record the current version before changing configuration, then validate one fixture.", "Change the config and test it.", "procedure"),
+            ),
+            sealed=(
+                *_pairs("decision record",
+                    ("Decision: keep polling at 60 seconds. Reason: lower intervals add cost without improving the alert SLA.", "Decision: reject the new dependency until its license review is complete.", "Decision: preserve the existing schema because the proposed field is derivable.", "Decision: keep the feature disabled until the sealed benchmark passes."),
+                    ("Polling stays the same.", "We are not adding the dependency yet.", "Schema will not change.", "Feature remains off.")),
+                *_pairs("procedure",
+                    ("Export the current settings, apply the change to one fixture, then compare the generated diff.", "Check the source hash before unpacking the archive, then run validation.", "Create the branch from the frozen commit, apply one change, then execute targeted tests.", "Capture the failing seed first, then rerun it with logging enabled."),
+                    ("Change settings and see what happens.", "Unpack it and test.", "Make a branch and modify things.", "Rerun with logs.")),
             ),
         ),
     )

@@ -10,13 +10,36 @@ def test_sealed_pairs_are_disjoint_from_training_wording():
         assert train_text.isdisjoint(sealed_text)
 
 
+def test_sealed_candidate_strings_never_appear_in_training_evidence():
+    cases = deterministic_context_cases()
+    training_strings = {
+        text
+        for case in cases
+        for pair in case.train
+        for text in (pair.preferred, pair.rejected)
+    }
+    sealed_strings = {
+        text
+        for case in cases
+        for pair in case.sealed
+        for text in (pair.preferred, pair.rejected)
+    }
+    assert training_strings.isdisjoint(sealed_strings)
+
+
+def test_tastebench_reaches_frozen_minimum_sample_floor():
+    cases = deterministic_context_cases()
+    assert sum(len(case.sealed) for case in cases) == 32
+    assert len({pair.context for case in cases for pair in case.sealed}) == 8
+
+
 def test_tastebench_is_deterministic():
     assert run_sealed_context_benchmark() == run_sealed_context_benchmark()
 
 
 def test_tastebench_reports_matched_metrics():
     result = run_sealed_context_benchmark()
-    assert result["sealed_pairs"] == 4.0
+    assert result["sealed_pairs"] == 32.0
     for key in ("v0_1_accuracy", "v0_1_brier", "v0_2_accuracy", "v0_2_brier"):
         assert 0.0 <= result[key] <= 1.0
 

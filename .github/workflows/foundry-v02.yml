@@ -30,12 +30,21 @@ jobs:
         run: python -m pip install -e '.[dev]'
       - name: Baseline and challenger tests
         run: python -m pytest -q
-      - name: Frozen 32-pair promotion evidence
+      - name: Frozen 32-pair evidence
         run: |
           python - <<'PY'
           from my_taste.promotion import evaluate_v02_promotion
-          result = evaluate_v02_promotion()
-          print(result)
-          if not result["promote"]:
+          from my_taste.tastebench import run_domain_leakage_check, run_sealed_context_benchmark
+
+          benchmark = run_sealed_context_benchmark()
+          leakage = run_domain_leakage_check()
+          decision = evaluate_v02_promotion(
+              benchmark,
+              leakage,
+              baseline_tests_passed=True,
+              challenger_tests_passed=True,
+          )
+          print({"benchmark": benchmark, "leakage": leakage, "decision": decision})
+          if not decision["promote"]:
               raise SystemExit("V0.2 frozen promotion gate rejected challenger")
           PY

@@ -1,6 +1,10 @@
 import pytest
 
-from my_taste.temporalbench import run_temporal_policy_matrix, run_temporal_window_comparison
+from my_taste.temporalbench import (
+    run_adversarial_temporal_gate,
+    run_temporal_policy_matrix,
+    run_temporal_window_comparison,
+)
 
 
 def test_temporal_comparison_is_deterministic_and_bounded():
@@ -44,6 +48,27 @@ def test_temporal_policy_matrix_does_not_hardcode_a_winner():
     assert all(score.cases == 2 for score in scores)
 
 
+def test_adversarial_gate_is_deterministic_complete_and_bounded():
+    first = run_adversarial_temporal_gate()
+    second = run_adversarial_temporal_gate()
+    assert first == second
+    assert tuple(score.window for score in first) == (4, 8, 16, 32)
+    for score in first:
+        assert 0.0 <= score.mean_post_drift_brier <= 1.0
+        assert 0.0 <= score.worst_stable_brier <= 1.0
+        assert 0.0 <= score.neighboring_context_delta <= 1.0
+        assert 0.0 <= score.oscillation_phase_end_accuracy <= 1.0
+        assert 0.0 <= score.oscillation_phase_end_brier <= 1.0
+        assert 0.0 <= score.source_conflict_probability <= 1.0
+        assert 0.0 <= score.source_conflict_distance <= 0.5
+        assert isinstance(score.passes_gate, bool)
+
+
+def test_adversarial_gate_uses_requested_policy_set_without_hardcoded_winner():
+    scores = run_adversarial_temporal_gate(windows=(4, 16))
+    assert tuple(score.window for score in scores) == (4, 16)
+
+
 @pytest.mark.parametrize("kwargs", [{"pre_updates": 0}, {"post_updates": 0}, {"window": 0}])
 def test_temporal_comparison_fails_closed(kwargs):
     with pytest.raises(ValueError):
@@ -63,3 +88,9 @@ def test_temporal_comparison_fails_closed(kwargs):
 def test_temporal_policy_matrix_fails_closed(kwargs):
     with pytest.raises(ValueError):
         run_temporal_policy_matrix(**kwargs)
+
+
+@pytest.mark.parametrize("windows", [(), (0, 8), (8, 8)])
+def test_adversarial_gate_fails_closed(windows):
+    with pytest.raises(ValueError):
+        run_adversarial_temporal_gate(windows=windows)

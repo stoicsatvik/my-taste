@@ -48,3 +48,9 @@ jobs:
           if not decision["promote"]:
               raise SystemExit("V0.2 frozen promotion gate rejected challenger")
           PY
+      - name: Preference drift evidence
+        run: |
+          python - <<'PY'
+          from my_taste.driftbench import run_preference_drift_benchmark
+          print(run_preference_drift_benchmark())
+          PY

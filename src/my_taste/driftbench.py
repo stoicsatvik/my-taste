@@ -15,6 +15,13 @@ class DriftResult:
     final_probability: float
 
 
+@dataclass(frozen=True)
+class AsymmetricDriftCase:
+    pre_updates: int
+    post_updates: int
+    result: DriftResult
+
+
 def run_preference_drift_benchmark(*, pre_updates: int = 8, post_updates: int = 8) -> DriftResult:
     """Measure how quickly the current learner adapts after a preference reversal.
 
@@ -49,3 +56,23 @@ def run_preference_drift_benchmark(*, pre_updates: int = 8, post_updates: int = 
             recovery_updates=recovery,
             final_probability=trajectory[-1],
         )
+
+
+def run_asymmetric_drift_matrix(
+    *,
+    cases: tuple[tuple[int, int], ...] = ((8, 2), (32, 2), (128, 2), (128, 8)),
+) -> tuple[AsymmetricDriftCase, ...]:
+    """Falsify adaptation when stale history outweighs the reversal budget.
+
+    Cases are intentionally asymmetric. This function freezes no promotion threshold and
+    makes no claim about real-user drift; it exposes whether recovery depends on history size.
+    """
+    if not cases:
+        raise ValueError("cases must not be empty")
+    if len(set(cases)) != len(cases):
+        raise ValueError("cases must be unique")
+    results: list[AsymmetricDriftCase] = []
+    for pre_updates, post_updates in cases:
+        result = run_preference_drift_benchmark(pre_updates=pre_updates, post_updates=post_updates)
+        results.append(AsymmetricDriftCase(pre_updates, post_updates, result))
+    return tuple(results)

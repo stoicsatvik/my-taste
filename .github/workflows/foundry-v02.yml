@@ -7,6 +7,7 @@ on:
       - "tests/**"
       - "pyproject.toml"
       - "BENCHMARK_PROTOCOL_V02.md"
+      - "TEMPORAL_PROMOTION_PROTOCOL_V01.md"
       - ".github/workflows/foundry-v02.yml"
 
 permissions:
@@ -35,15 +36,9 @@ jobs:
           python - <<'PY'
           from my_taste.promotion import evaluate_v02_promotion
           from my_taste.tastebench import run_domain_leakage_check, run_sealed_context_benchmark
-
           benchmark = run_sealed_context_benchmark()
           leakage = run_domain_leakage_check()
-          decision = evaluate_v02_promotion(
-              benchmark,
-              leakage,
-              baseline_tests_passed=True,
-              challenger_tests_passed=True,
-          )
+          decision = evaluate_v02_promotion(benchmark, leakage, baseline_tests_passed=True, challenger_tests_passed=True)
           print({"benchmark": benchmark, "leakage": leakage, "decision": decision})
           if not decision["promote"]:
               raise SystemExit("V0.2 frozen promotion gate rejected challenger")
@@ -54,9 +49,13 @@ jobs:
           from my_taste.driftbench import run_asymmetric_drift_matrix, run_preference_drift_benchmark
           print({"symmetric": run_preference_drift_benchmark(), "asymmetric": run_asymmetric_drift_matrix()})
           PY
-      - name: Temporal policy evidence
+      - name: Frozen temporal promotion evidence
         run: |
           python - <<'PY'
-          from my_taste.temporalbench import run_temporal_policy_matrix, run_temporal_window_comparison
-          print({"reference_window": run_temporal_window_comparison(), "policy_matrix": run_temporal_policy_matrix()})
+          from my_taste.temporalbench import run_adversarial_temporal_gate, run_temporal_policy_matrix
+          matrix = run_temporal_policy_matrix()
+          adversarial = run_adversarial_temporal_gate()
+          passing = [score for score in adversarial if score.passes_gate]
+          selected = min(passing, key=lambda score: (score.mean_post_drift_brier, -score.window)) if passing else None
+          print({"policy_matrix": matrix, "adversarial": adversarial, "selected": selected})
           PY

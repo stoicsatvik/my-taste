@@ -51,6 +51,6 @@ jobs:
       - name: Preference drift evidence
         run: |
           python - <<'PY'
-          from my_taste.driftbench import run_preference_drift_benchmark
-          print(run_preference_drift_benchmark())
+          from my_taste.driftbench import run_asymmetric_drift_matrix, run_preference_drift_benchmark
+          print({"symmetric": run_preference_drift_benchmark(), "asymmetric": run_asymmetric_drift_matrix()})
           PY

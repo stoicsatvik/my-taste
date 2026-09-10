@@ -95,7 +95,10 @@ class SQLiteTasteStore:
         """Return deterministic newest-first evidence within an explicit provenance scope."""
         if not domain.strip():
             raise ValueError("domain must be non-empty")
-        limit = max(1, min(int(limit), 500))
+        if isinstance(limit, bool) or not isinstance(limit, int):
+            raise TypeError("limit must be an integer")
+        if not 1 <= limit <= 500:
+            raise ValueError("limit must be between 1 and 500")
         clauses = ["domain = ?"]
         params: list[object] = [domain]
         for column, value in (("context", context), ("source", source), ("kind", kind)):

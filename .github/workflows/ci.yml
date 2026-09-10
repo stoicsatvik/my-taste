@@ -24,3 +24,5 @@ jobs:
         run: python -m pytest -q
       - name: Context smoke benchmark
         run: python benchmarks/context_smoke.py
+      - name: V0.2 matched-budget TasteBench
+        run: python benchmarks/tastebench_v02.py

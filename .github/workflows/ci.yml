@@ -26,3 +26,5 @@ jobs:
         run: python benchmarks/context_smoke.py
       - name: V0.2 matched-budget TasteBench
         run: python benchmarks/tastebench_v02.py
+      - name: V0.2 frozen drift reversal gate
+        run: python benchmarks/drift_gate_v02.py

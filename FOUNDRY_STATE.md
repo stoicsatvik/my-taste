@@ -1,118 +1,75 @@
 # My Taste — Unified Foundry State
 
 ## Mission
-
 Build a local-first, user-owned multimodal preference layer that predicts what a user would choose, then exposes that learned taste to AI agents through MCP.
 
-Core objective:
-
-`P(candidate_i > candidate_j | user, domain, context, evidence, history)`
-
-This is a preference-learning system, not merely a memory store.
+Core objective: `P(candidate_i > candidate_j | user, domain, context, evidence, history)`.
 
 ## Current status
+**Claim status: SUPPORTED** for the frozen v0.1 text baseline and deterministic V0.2 context/provenance integration behavior. V0.2 is **NOT YET PROVEN** superior to v0.1.
 
-**Claim status: SUPPORTED**
-
-v0.1 has a working text preference baseline:
-
+### Frozen v0.1 baseline
 - SQLite evidence persistence
 - explicit pairwise choice learning
 - edit-as-preference learning
-- interpretable text feature extraction
-- candidate ranking
-- explanations and confidence estimates
-- CLI
-- MCP server bindings
-- deterministic unit tests
+- interpretable text features
+- candidate ranking, explanations/confidence, CLI, MCP bindings
+- deterministic tests
 
-Current baseline tests: 5 passing.
+### V0.2 challenger — `feat/v0.2-context-provenance`
+- exact context normalization and context-conditioned residual weights
+- context-aware ranking/profile
+- context-filtered provenance retrieval
+- agent-facing `taste_context` compiler and MCP-v2 entrypoint
+- deterministic context/provenance tests and context-separation smoke benchmark
+- exact-head CI at `fd9ca123734c2784be708d20eceea169d4836ba5`: SUPPORTED integration behavior
 
-## Foundry doctrine for this repo
+### TasteBench V0.2 promotion experiment
+Objective: test whether contextual V0.2 beats frozen v0.1 under an identical evidence budget on held-out pairwise choices.
 
-1. Make substantive tested progress, not cosmetic commits.
-2. Preserve a simple baseline while introducing stronger challengers.
-3. Evaluate on held-out pairwise choices before claiming personalization gains.
-4. Keep raw personal evidence local-first by default.
-5. Every learned preference must retain provenance to its evidence.
-6. Separate domains and contexts; do not silently generalize writing taste into unrelated domains.
-7. Track uncertainty, contradictions, preference drift, and abstention rather than forcing confident predictions.
-8. Prefer pluggable encoders/rankers so the protocol and evidence store survive model changes.
-9. Never commit private user evidence, message exports, screenshots, credentials, or sensitive personal datasets to this public repository.
-10. Public fixtures must be synthetic, consented, or safely anonymized.
+Fixture: `synthetic-context-conflict-v1` in `benchmarks/tastebench_v02.py`.
+- 4 training pairs per model, identical order/evidence budget
+- 4 disjoint-wording held-out pairs
+- two contexts with deliberately opposing style preferences
+- metrics: pairwise accuracy and Brier score
+- preregistered gate: V0.2 must have strictly higher held-out accuracy AND lower Brier score than v0.1
+- no private/user evidence; fixture is synthetic
 
-## Highest-priority build sequence
+Experiment head after CI wiring: `85b69d86e4fe60c55585b28fb206057331aa16ab`.
+Status: **NOT YET PROVEN** until exact-head CI executes the benchmark. Do not tune the fixture after seeing results; preserve failures and create a separately versioned challenger if needed.
 
+## Foundry doctrine
+1. Preserve simple baselines while introducing challengers.
+2. Evaluate held-out pairwise choices before personalization claims.
+3. Raw personal evidence is local-first; public fixtures are synthetic, consented, or safely anonymized.
+4. Every learned preference retains provenance.
+5. Separate domains/contexts; do not silently generalize across them.
+6. Track uncertainty, contradictions, drift, abstention, and domain leakage.
+7. Never commit private messages, screenshots, credentials, sensitive exports, or identifying datasets.
+
+## Highest-priority sequence
 ### V0.2 — Context + provenance
-
-- context tags and context-conditioned scoring
-- provenance retrieval API
-- contradiction tracking
-- preference confidence/calibration
-- JSON export/import
-- domain permission scopes
-- pluggable text encoder interface
-- held-out pairwise benchmark harness
-
-Promotion gate: context-aware challenger must outperform or materially improve calibration over v0.1 on deterministic/sealed evaluation without breaking existing tests.
+Context scoring and provenance exist. Remaining gates: benchmark result, contradiction/drift handling, calibration/abstention, export/import, domain permission scopes, pluggable encoder, real MCP-client interoperability.
 
 ### V0.3 — Screenshots + images
-
-- image/screenshot evidence schema
-- perceptual hash + metadata
-- vision adapter interface
-- visual preference dimensions such as hierarchy, density, spacing, typography, composition
-- pairwise visual ranking
-- image TasteBench fixtures
-
-Promotion gate: demonstrate reproducible held-out visual preference prediction above simple metadata/profile baselines.
+Blocked on V0.2 benchmark foundation. Add image evidence schema, perceptual metadata, vision adapter, visual dimensions, pairwise ranking, sealed visual TasteBench only after V0.2 measurement is credible.
 
 ### V0.4 — Video + audio
-
-- frame/scene sampling
-- transcript ingestion
-- pacing/editing features
-- audio adapter
-- multimodal fusion
-
-Promotion gate: multimodal model must beat single-modality baselines on sealed held-out choices under matched budgets.
+Blocked on V0.3 evidence. Require multimodal gains over matched single-modality baselines.
 
 ### V0.5 — Portable taste layer
+SDKs, scoped permissions, browser feedback capture, agent-readable resources, importers.
 
-- Python/TypeScript SDKs
-- agent-readable resources
-- scoped taste permissions
-- browser extension feedback capture
-- platform-history importers
-
-## Research track — TasteBench
-
-Compare under matched evidence and budgets:
-
-1. base model with no user context
-2. written preference profile
-3. RAG over user memories
-4. My Taste v0.1 interpretable ranker
-5. contextual My Taste
-6. multimodal My Taste
-
-Primary metrics:
-
-- pairwise preference accuracy
-- calibration / Brier score
-- abstention quality
-- sample efficiency
-- adaptation to preference drift
-- domain leakage / unwanted generalization
+## TasteBench research track
+Matched-budget comparison targets: no-context base, written profile, memory/RAG, v0.1 ranker, contextual My Taste, multimodal My Taste.
+Metrics: pairwise accuracy, Brier/calibration, abstention quality, sample efficiency, drift adaptation, domain leakage.
 
 ## Current blockers / unknowns
-
-- No context-conditioned model yet.
-- No sealed benchmark dataset yet.
-- No screenshot/image implementation yet.
+- Exact-head `synthetic-context-conflict-v1` benchmark result pending CI.
 - No contradiction/drift model yet.
-- MCP integration exists but needs client-side interoperability validation.
+- No screenshot/image implementation yet.
+- MCP integration needs real compatible-client interoperability validation.
+- No real/consented external preference benchmark yet.
 
 ## Next best move
-
-Build V0.2 context-conditioned preference learning plus a deterministic held-out pairwise benchmark before adding vision complexity.
+Observe exact-head TasteBench CI. Promote V0.2 only if the preregistered matched-budget gate passes; otherwise preserve the failure and diagnose the model rather than tuning the holdout.

@@ -38,9 +38,23 @@ def test_query_evidence_can_filter_kind_without_collapsing_source(tmp_path: Path
 def test_query_evidence_is_deterministic_and_fail_closed(tmp_path: Path) -> None:
     store = SQLiteTasteStore(tmp_path / "taste.db")
     store.add_evidence(_evidence(source="a", context="x"))
-    first = store.query_evidence(domain="writing", limit=5000)
-    second = store.query_evidence(domain="writing", limit=5000)
+    first = store.query_evidence(domain="writing", limit=500)
+    second = store.query_evidence(domain="writing", limit=500)
     assert [item.id for item in first] == [item.id for item in second]
     assert len(first) == 1
     with pytest.raises(ValueError):
         store.query_evidence(domain="   ")
+
+
+@pytest.mark.parametrize("limit", [0, -1, 501])
+def test_query_evidence_rejects_out_of_budget_limits(tmp_path: Path, limit: int) -> None:
+    store = SQLiteTasteStore(tmp_path / "taste.db")
+    with pytest.raises(ValueError):
+        store.query_evidence(domain="writing", limit=limit)
+
+
+@pytest.mark.parametrize("limit", [True, 1.5, "20"])
+def test_query_evidence_rejects_non_integer_limits(tmp_path: Path, limit: object) -> None:
+    store = SQLiteTasteStore(tmp_path / "taste.db")
+    with pytest.raises(TypeError):
+        store.query_evidence(domain="writing", limit=limit)  # type: ignore[arg-type]

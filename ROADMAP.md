@@ -46,6 +46,19 @@
 - [ ] Browser extension for "prefer this / reject that"
 - [ ] Importers for exported platform history
 
+## Product surface — Tasteprint
+
+Tasteprint is a feature of My Taste, not a separate preference system. See [`docs/TASTEPRINT.md`](docs/TASTEPRINT.md).
+
+- [ ] Pairwise onboarding session backed by normal My Taste evidence
+- [ ] Interpretable Tasteprint result with confidence
+- [ ] `taste.json` export
+- [ ] compact `taste.md` agent-context export
+- [ ] local web/CLI experience
+- [ ] opt-in public share page and share-card renderer
+- [ ] handoff into MCP/SDK setup
+- [ ] measure completion, held-out accuracy, export, share, and activation rates
+
 ## Research track — TasteBench
 
 Measure unseen pairwise preference prediction accuracy for:

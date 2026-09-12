@@ -29,5 +29,8 @@ jobs:
       - name: Preserve rejected cumulative drift baseline
         continue-on-error: true
         run: python benchmarks/drift_gate_v02.py
-      - name: V0.2 bounded-recency drift challenger
+      - name: Preserve rejected bounded-recency challenger
+        continue-on-error: true
         run: python benchmarks/recency_gate_v02.py
+      - name: V0.2 context-isolation recency challenger
+        run: python benchmarks/context_isolation_gate_v02.py

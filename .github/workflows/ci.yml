@@ -39,3 +39,5 @@ jobs:
         run: python benchmarks/transfer_interference_gate_v02.py
       - name: Frozen hierarchical transfer-interference gate
         run: python benchmarks/hierarchical_context_gate_v02.py
+      - name: Frozen family-misassignment attack
+        run: python benchmarks/family_misassignment_gate_v02.py

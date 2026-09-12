@@ -34,3 +34,5 @@ jobs:
         run: python benchmarks/recency_gate_v02.py
       - name: V0.2 context-isolation recency challenger
         run: python benchmarks/context_isolation_gate_v02.py
+      - name: Frozen transfer-vs-interference gate
+        run: python benchmarks/transfer_interference_gate_v02.py

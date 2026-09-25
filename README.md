@@ -208,7 +208,7 @@ This repository is itself a Codex Git marketplace. Its single `my-taste` plugin 
 - a first-run isolated Python runtime,
 - persistent preference data at `~/.my_taste/taste.db`.
 
-The first MCP launch installs Python dependencies into `~/.my_taste/codex-runtime`; protocol output remains clean because setup logs are sent to stderr. Start a new Codex chat after installation so the plugin and skill are loaded.
+The first MCP launch installs Python dependencies into `~/.my_taste/runtime`; protocol output remains clean because setup logs are sent to stderr. Start a new Codex chat after installation so the plugin and skill are loaded.
 
 ## Claude Code
 

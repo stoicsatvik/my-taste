@@ -36,3 +36,11 @@ def test_skill_extension_advertises_complete_catalog_entry():
     assert set(extension.resource_text) == {
         row["uri"] for row in extension.entry["resources"]
     }
+
+
+def test_actual_mcp_server_registers_skill_extension_and_resources():
+    from my_taste.mcp_server import mcp, skill_extension
+
+    assert skill_extension.identifier == "io.modelcontextprotocol/skills"
+    assert mcp._lowlevel_server.get_request_handler("skills/list") is not None
+    assert mcp._lowlevel_server.get_request_handler("skills/get") is not None

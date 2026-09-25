@@ -91,16 +91,47 @@ class TasteEngine:
             scale = max(1.0, abs(float(left)), abs(float(right)))
             return max(0.0, 1.0 - abs(float(left) - float(right)) / scale)
 
-        if isinstance(left, list) and isinstance(right, list):
-            a = {str(v).lower() for v in left}
-            b = {str(v).lower() for v in right}
-            if not a and not b:
-                return 1.0
-            if not a or not b:
+        if isinstance(left, dict) and isinstance(right, dict):
+            common = sorted(set(left) & set(right))
+            if not common:
                 return 0.0
-            return len(a & b) / len(a | b)
+            return sum(cls._feature_similarity(left[k], right[k]) for k in common) / len(common)
+
+        if isinstance(left, list) and isinstance(right, list):
+            if not left and not right:
+                return 1.0
+            if not left or not right:
+                return 0.0
+
+            primitive = (str, int, float, bool)
+            if all(isinstance(v, primitive) for v in left + right):
+                a = {str(v).lower() for v in left}
+                b = {str(v).lower() for v in right}
+                return len(a & b) / len(a | b)
+
+            pair_count = min(len(left), len(right))
+            if pair_count == 0:
+                return 0.0
+            return sum(
+                cls._feature_similarity(left[i], right[i])
+                for i in range(pair_count)
+            ) / max(len(left), len(right))
 
         return cls._jaccard(left, right)
+
+    @classmethod
+    def _flatten_feature_items(
+        cls,
+        value: object,
+        prefix: str = "",
+    ) -> list[tuple[str, object]]:
+        if isinstance(value, dict):
+            rows: list[tuple[str, object]] = []
+            for key, nested in value.items():
+                child = f"{prefix}.{key}" if prefix else str(key)
+                rows.extend(cls._flatten_feature_items(nested, child))
+            return rows
+        return [(prefix, value)] if prefix else []
 
     def _score_features(self, features: dict[str, float], domain: str) -> tuple[float, dict[str, float]]:
         weights = self.store.get_weights(domain)
@@ -321,7 +352,7 @@ class TasteEngine:
                 continue
             sign = str(item.get("preference", "positive"))
             weight = float(item.get("relevance", 0.0))
-            for feature, value in features.items():
+            for feature, value in self._flatten_feature_items(features):
                 key = (str(feature), repr(value))
                 bucket = buckets.setdefault(
                     key,

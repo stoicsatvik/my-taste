@@ -154,9 +154,33 @@ A video-capable agent can sample a liked Reel and store:
 
 Future Reel tasks can retrieve this. A long documentary task should not blindly inherit it because context is part of the evidence.
 
+## Token-efficient deep capture
+
+Deep capture no longer means dumping the browser into the model context.
+
+For an explicit live-site save, My Taste v0.4 uses:
+
+```text
+save_website_reference(url)
+        |
+        +--> full DOM/CSS/pixel/motion capture
+        |        stored locally as gzip
+        |
+        +--> compact forensic fingerprint
+                 stored in taste.db
+        |
+        +--> tiny receipt returned to the model
+```
+
+The full raw capture lives under the My Taste data directory and does not consume conversation tokens. The compact fingerprint preserves distributions, representative geometry/styles, typography, CSS tokens, responsive queries, and summarized animation timing.
+
+For screenshots, `save_image_reference` similarly computes pixel evidence server-side and accepts only a compact semantic fingerprint from the host model.
+
+For later creative work, `taste_brief` is compact by default and normally returns only 4-6 high-signal preference rules.
+
 ## Capture fidelity
 
-My Taste v0.3 distinguishes what can actually be observed instead of pretending every reference has the same information content.
+My Taste v0.4 distinguishes what can actually be observed instead of pretending every reference has the same information content.
 
 | Reference | What can be captured |
 | --- | --- |
@@ -167,7 +191,7 @@ My Taste v0.3 distinguishes what can actually be observed instead of pretending 
 
 A still image cannot prove hover states, scroll choreography, easing, animation timing, or responsive layouts outside the shown viewport. Those fields are marked unobserved rather than guessed.
 
-For a live website, the `analyze_website` MCP tool uses an installed Chrome/Chromium browser and combines rendered pixels with DOM/CSS/motion evidence. For a local screenshot, `analyze_image_file` adds deterministic raster evidence to the host model's semantic analysis.
+For a live website **save**, use `save_website_reference`; it captures rendered pixels plus DOM/CSS/motion evidence without returning the giant raw dump. `analyze_website` exists for explicit forensic inspection and returns a compact fingerprint. For a local screenshot save, use `save_image_reference`.
 
 ## One-line Codex install
 
@@ -232,7 +256,7 @@ Then in ChatGPT, enable Developer mode, create a personal MCP plugin using the p
 
    `I like this website UI. Analyze its visual grammar and save it to My Taste.`
 
-2. The host model should inspect the screenshot and call `observe_artifact` with `domain="ui_design"`, `modality="screenshot"`, context tags, and derived visual features.
+2. The host model should inspect the screenshot and call `save_image_reference` when a local path is available, passing only compact semantic features.
 
 3. In a later taste-sensitive request, say:
 
@@ -319,11 +343,15 @@ http://127.0.0.1:8000/mcp
 
 ### MCP tools
 
+- `save_website_reference` — preferred live-site save path
+- `save_image_reference` — preferred screenshot/image save path
+- `analyze_website` — compact forensic inspection
+- `analyze_image_file` — explicit pixel inspection
 - `observe_choice`
 - `observe_edit`
 - `observe_artifact`
+- `taste_brief` — compact by default
 - `retrieve_taste`
-- `taste_brief`
 - `rank_profiles`
 - `rank_text`
 - `taste_profile`
@@ -416,15 +444,7 @@ Explicit preference
 
 ## Current limits
 
-This is not yet a fully local computer-vision/video-analysis stack.
-
-For websites, screenshots, and videos, the current production path is:
-
-```text
-capable agent inspects -> My Taste stores/retrieves
-```
-
-Direct local frame extraction, scene segmentation, audio analysis, perceptual hashing, embeddings, contradiction handling, and calibrated TasteBench evaluation remain work in progress.
+Website capture is now local and browser-assisted; screenshot pixel analysis is local. Host vision still supplies higher-level screenshot semantics, and video analysis still depends on the host's video perception. Direct local video frame extraction, scene segmentation, audio analysis, perceptual embeddings, contradiction handling, and calibrated TasteBench evaluation remain work in progress.
 
 ## Roadmap
 

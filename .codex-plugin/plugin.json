@@ -1,7 +1,7 @@
 {
   "name": "my-taste",
-  "version": "0.2.0",
-  "description": "Learn and automatically apply evidence-backed writing, UI, screenshot, and video taste across Codex sessions.",
+  "version": "0.3.0",
+  "description": "Deeply capture and automatically apply evidence-backed writing, UI, website, screenshot, and video taste across Codex sessions.",
   "skills": "./skills/",
   "mcpServers": "./.mcp.json"
 }

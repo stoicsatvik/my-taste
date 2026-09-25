@@ -75,6 +75,23 @@ def retrieve_taste(
     )
 
 
+
+@mcp.tool()
+def taste_brief(
+    domain: str,
+    context: dict[str, str] | None = None,
+    modality: str = "",
+    limit: int = 12,
+) -> dict[str, object]:
+    """Return an actionable context-specific brief of what to prefer, avoid, or treat as conflicted."""
+    return engine.taste_brief(
+        domain=domain,
+        context=context,
+        modality=modality,
+        limit=limit,
+    )
+
+
 @mcp.tool()
 def rank_profiles(
     candidates: list[dict[str, Any]],

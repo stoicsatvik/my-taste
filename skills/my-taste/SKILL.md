@@ -159,14 +159,14 @@ When the user likes/dislikes a video:
 When generating a taste-sensitive output:
 
 1. Determine domain and task context.
-2. Call `retrieve_taste`.
-3. Apply the highest-relevance **positive** evidence and avoid patterns supported by relevant **negative** evidence.
+2. Call `taste_brief` for the task context. Use `retrieve_taste` only when provenance or individual references are needed.
+3. Apply the brief's high-confidence `prefer` guidance, avoid its `avoid` guidance, and do not force features listed as conflicts.
 4. Generate the output.
 5. If there are multiple structured candidates and ranking matters, fingerprint each candidate and call `rank_profiles`.
 6. For raw writing candidates, the existing lexical `rank_text` may be used as an additional signal.
 7. Do not mention My Taste unless it materially helps the user understand the result.
 
-The preferred behavior is silent contextual application, not forcing the user to invoke `@MyTaste` every time.
+The preferred behavior is silent contextual application, not forcing the user to invoke `@MyTaste` every time. When the brief has low confidence or no evidence, fall back to the user's explicit request instead of pretending personalization is strong.
 
 ## Pairwise and edit learning
 

@@ -1,0 +1,14 @@
+{
+  "name": "my-taste",
+  "version": "0.3.0",
+  "description": "Learn and automatically apply evidence-backed writing, UI, screenshot, website, and video taste across Claude Code sessions.",
+  "author": {
+    "name": "Satvik"
+  },
+  "mcpServers": {
+    "my-taste": {
+      "command": "python3",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/plugin_mcp_entry.py"]
+    }
+  }
+}

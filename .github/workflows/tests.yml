@@ -23,6 +23,8 @@ jobs:
         run: python scripts/package_skill.py
       - name: Build plugin package
         run: python scripts/package_plugin.py
+      - name: Build wheel with bundled skill
+        run: python -m pip wheel . --no-deps -w dist/wheels
       - name: Validate packages
         run: |
           python - <<'PY'
@@ -42,4 +44,11 @@ jobs:
               names = set(z.namelist())
               assert "plugin.json" in names
               assert "skills/my-taste/SKILL.md" in names
+
+          wheel = next(Path("dist/wheels").glob("my_taste-*.whl"))
+          with zipfile.ZipFile(wheel) as z:
+              names = set(z.namelist())
+              assert "my_taste/skill_bundle/SKILL.md" in names
+              assert "my_taste/skill_bundle/references/style-fingerprints.md" in names
+              assert "my_taste/skill_bundle/references/tool-contract.md" in names
           PY

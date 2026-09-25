@@ -17,3 +17,29 @@ jobs:
         run: python -m pip install -e ".[dev]"
       - name: Test
         run: python -m pytest -q
+      - name: Compile bootstrap and runtime
+        run: python -m py_compile bootstrap.py src/my_taste/connect.py src/my_taste/mcp_server.py
+      - name: Build skill package
+        run: python scripts/package_skill.py
+      - name: Build plugin package
+        run: python scripts/package_plugin.py
+      - name: Validate packages
+        run: |
+          python - <<'PY'
+          import json
+          import zipfile
+          from pathlib import Path
+
+          plugin = json.loads(Path("plugin.json").read_text())
+          assert plugin["name"] == "my-taste"
+          assert plugin["version"] == "0.2.0"
+
+          with zipfile.ZipFile("dist/my-taste-skill.zip") as z:
+              names = set(z.namelist())
+              assert "my-taste/SKILL.md" in names
+
+          with zipfile.ZipFile("dist/my-taste-plugin.zip") as z:
+              names = set(z.namelist())
+              assert "plugin.json" in names
+              assert "skills/my-taste/SKILL.md" in names
+          PY

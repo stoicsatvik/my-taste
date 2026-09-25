@@ -88,6 +88,16 @@ or during development:
 mcp dev src/my_taste/mcp_server.py
 ```
 
+For a ChatGPT-compatible Streamable HTTP endpoint:
+
+```bash
+MY_TASTE_MCP_TRANSPORT=streamable-http my-taste-mcp
+```
+
+This serves MCP at `http://127.0.0.1:8000/mcp` by default. Override the bind address and port with `MY_TASTE_MCP_HOST` and `MY_TASTE_MCP_PORT`.
+
+The default remains stdio so local-first behavior does not silently become a network service.
+
 Initial MCP tools:
 
 - `observe_choice`
@@ -108,6 +118,14 @@ skills/my-taste/
 ```
 
 The skill is deliberately thin: it teaches an agent when to read, rank, explain, or update learned preferences while the MCP server remains the live preference engine. This prevents a static prompt from becoming a second, stale source of truth.
+
+Build the uploadable skill bundle with:
+
+```bash
+python scripts/package_skill.py
+```
+
+The output is `dist/my-taste-skill.zip`, containing one top-level `my-taste/` folder as required by Agent Skills upload flows.
 
 Key behavior:
 

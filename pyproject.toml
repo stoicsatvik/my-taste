@@ -13,6 +13,7 @@ authors = [{name = "Satvik"}]
 dependencies = [
   "mcp[cli]>=2,<3",
   "Pillow>=10,<13",
+  "playwright>=1.50,<2",
 ]
 
 [project.optional-dependencies]

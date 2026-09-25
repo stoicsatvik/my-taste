@@ -81,6 +81,17 @@ Use a modality hint when useful:
 - `screenshot`
 - `video`
 
+## Token discipline
+
+Preserve forensic detail **locally**, not in the model transcript.
+
+- For an explicit live-website save, prefer `save_website_reference`. It performs capture + compaction + persistence server-side and returns only a receipt.
+- For a local screenshot/image save, prefer `save_image_reference` with a compact semantic fingerprint. Do not call `analyze_image_file` first unless the user explicitly asks to see the analysis.
+- Use `analyze_website` only when the user asks to inspect/show/explain the website analysis itself.
+- Use compact `taste_brief` for ordinary generation. Do not call `retrieve_taste` unless individual provenance/reference details are actually required.
+- Do not echo the full stored fingerprint back to the user after saving. Confirm the category, fidelity, and a few signatures.
+- Large raw website captures are intentionally stored as compressed local sidecars instead of being injected into model context.
+
 ## Learn a reference
 
 When the user says things like:
@@ -95,19 +106,21 @@ follow this workflow:
 
 1. **Inspect the actual reference** using the available browser, image, file, or video capabilities.
 2. **Use deep capture by default.** Read `references/deep-capture.md`. A short aesthetic summary is not enough when the user says to save the reference.
-3. If the reference is a local screenshot/image and a readable local path is available, call `analyze_image_file` first for deterministic pixel evidence, then combine it with semantic visual analysis.
+3. **Choose the cheapest correct save path:**
+   - live public URL -> `save_website_reference`;
+   - local screenshot/image path -> `save_image_reference`;
+   - text/video/other reference -> compact host fingerprint + `observe_artifact`.
 4. **Separate content from style.** Extract reusable choices, not topic-specific facts.
 5. **Record observability honestly.** A static screenshot cannot prove animations, hover states, scroll effects, responsive behavior outside the shown viewport, or interaction timing.
-6. **Build a nested structured fingerprint** using the deep-capture schema.
-7. **Infer context** from the artifact and user's instruction.
-8. Call `observe_artifact` with:
+6. **Infer context** from the artifact and user's instruction.
+7. Only use separate analysis + `observe_artifact` when the one-shot save tools cannot represent the reference.
    - domain,
    - modality,
    - fingerprint features,
    - compact context,
    - `positive` or `negative`,
    - source reference when useful.
-9. Confirm what category and fidelity of taste was saved without dumping the full forensic fingerprint unless the user asks.
+8. Confirm what category and fidelity of taste was saved without dumping the full forensic fingerprint unless the user asks.
 
 If the artifact cannot actually be inspected, do not fabricate a fingerprint. State that the reference was not analyzable and avoid saving invented evidence.
 
@@ -115,8 +128,8 @@ If the artifact cannot actually be inspected, do not fabricate a fingerprint. St
 
 When a website or UI is explicitly liked/disliked:
 
-1. For a static screenshot, capture pixel evidence, geometry, typography, surface system, components, composition, and distinctive signatures at the highest observable precision.
-2. For a live public URL, call `analyze_website` when available. Use its rendered-pixel, DOM geometry, computed-style, CSS-token, breakpoint, and Web Animations evidence as the forensic base, then add semantic interpretation from the host model.
+1. For a static screenshot, capture pixel evidence, geometry, typography, surface system, components, composition, and distinctive signatures at the highest observable precision. When saving, prefer `save_image_reference` so pixel analysis remains server-side.
+2. For a live public URL being **saved**, call `save_website_reference` when available. It captures rendered pixels, DOM geometry, computed styles, CSS tokens, breakpoints, and Web Animations evidence server-side while returning only a compact receipt. Call `analyze_website` only when the user explicitly wants the forensic analysis surfaced in the conversation.
 3. Inspect representative sections and states, not only the hero. When browser interaction is available, additionally inspect hover/focus/menu/modal states that the automated capture did not trigger.
 4. Never infer motion from a still image. If motion matters and only a screenshot is available, save the static design faithfully and mark motion as unobserved.
 5. Save under `domain="ui_design"`.
@@ -165,7 +178,7 @@ When the user likes/dislikes a video:
 When generating a taste-sensitive output:
 
 1. Determine domain and task context.
-2. Call `taste_brief` for the task context. Use `retrieve_taste` only when provenance or individual references are needed.
+2. Call compact `taste_brief` for the task context. Use `retrieve_taste` only when provenance or individual references are needed.
 3. Apply the brief's high-confidence `prefer` guidance, avoid its `avoid` guidance, and do not force features listed as conflicts.
 4. Generate the output.
 5. If there are multiple structured candidates and ranking matters, fingerprint each candidate and call `rank_profiles`.

@@ -116,11 +116,12 @@ If the artifact cannot actually be inspected, do not fabricate a fingerprint. St
 When a website or UI is explicitly liked/disliked:
 
 1. For a static screenshot, capture pixel evidence, geometry, typography, surface system, components, composition, and distinctive signatures at the highest observable precision.
-2. For a live URL, inspect representative sections and states, not only the hero. When possible inspect DOM/computed CSS, breakpoints, hover/focus states, scroll behavior, transitions, animation durations/easing/delays, and layout geometry.
-3. Never infer motion from a still image. If motion matters and only a screenshot is available, save the static design faithfully and mark motion as unobserved.
-4. Save under `domain="ui_design"`.
-5. Use `modality="website"` for live pages and `modality="screenshot"` for static captures.
-6. Include context such as surface, product type, industry, device, goal, and capture fidelity when inferable.
+2. For a live public URL, call `analyze_website` when available. Use its rendered-pixel, DOM geometry, computed-style, CSS-token, breakpoint, and Web Animations evidence as the forensic base, then add semantic interpretation from the host model.
+3. Inspect representative sections and states, not only the hero. When browser interaction is available, additionally inspect hover/focus/menu/modal states that the automated capture did not trigger.
+4. Never infer motion from a still image. If motion matters and only a screenshot is available, save the static design faithfully and mark motion as unobserved.
+5. Save under `domain="ui_design"`.
+6. Use `modality="website"` for live pages and `modality="screenshot"` for static captures.
+7. Include context such as surface, product type, industry, device, goal, and capture fidelity when inferable.
 
 Do not save the site's brand identity or exact copyrighted assets as if they were reusable style rules. Capture the design grammar.
 

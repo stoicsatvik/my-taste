@@ -1,12 +1,65 @@
 # My Taste MCP tool contract
 
-This reference describes how the current My Taste skill should use the repository's MCP surface.
+The MCP server is the durable preference layer. The Agent Skill decides when to call these tools.
 
-## Tools
+## `observe_artifact`
 
-### `observe_choice`
+Store an explicitly liked or disliked structured style fingerprint.
 
-Use for explicit pairwise preference evidence.
+Inputs:
+- `domain: str`
+- `modality: str`
+- `features: object`
+- `context: object | null`
+- `preference: "positive" | "negative"`
+- `strength: float = 1.0`
+- `source_reference: str = ""`
+- `note: str = ""`
+
+Use this for:
+- a liked website or screenshot,
+- a liked writing sample with no comparison,
+- a liked/disliked video,
+- future modalities represented by structured fingerprints.
+
+The perception step belongs to the calling agent. My Taste stores the derived evidence and does not pretend it independently watched a video or browsed a website.
+
+## `retrieve_taste`
+
+Retrieve the most relevant evidence for the current context.
+
+Inputs:
+- `domain: str`
+- `context: object | null`
+- `modality: str = ""`
+- `limit: int = 8`
+
+Ranking combines:
+- exact domain,
+- contextual similarity,
+- modality match,
+- evidence strength,
+- mild recency.
+
+The returned evidence includes provenance and relevance. Relevance is a retrieval score, not a calibrated probability that the user will approve the final output.
+
+## `rank_profiles`
+
+Rank structured candidate fingerprints against relevant positive and negative taste evidence.
+
+Inputs:
+- `candidates: [{id?, label?, features}]`
+- `domain: str`
+- `context: object | null`
+- `modality: str = ""`
+
+Use after candidate outputs have been converted into comparable style fingerprints.
+
+A higher score means "more consistent with retrieved evidence," not "objectively better."
+
+## `observe_choice`
+
+Strong pairwise text evidence.
 
 Inputs:
 - `preferred: str`
@@ -14,13 +67,11 @@ Inputs:
 - `domain: str = "writing"`
 - `context: str = ""`
 
-Semantics: records `preferred > rejected` and updates the online preference model.
+Semantics: `preferred > rejected`.
 
-Do not call when the user's preference is ambiguous.
+## `observe_edit`
 
-### `observe_edit`
-
-Use when the user edits a known original and the edit itself is a preference signal.
+Strong text evidence from a known rewrite.
 
 Inputs:
 - `original: str`
@@ -28,78 +79,42 @@ Inputs:
 - `domain: str = "writing"`
 - `context: str = ""`
 
-Semantics: records `edited > original`.
+Semantics: `edited > original`.
 
-### `rank_text`
+## `rank_text`
 
-Use to rank viable text candidates according to learned weights.
+Legacy/interpretable lexical ranking for raw text candidates.
 
-Inputs:
-- `candidates: list[str]`
-- `domain: str = "writing"`
+This uses learned lexical feature weights and is complementary to structured style evidence.
 
-Returns candidates sorted by model score with strongest feature contributions.
+## `taste_profile`
 
-A higher score means "more consistent with the current learned model," not "objectively better."
+Returns the strongest learned lexical preference weights for a domain.
 
-### `taste_profile`
+This is v0.1's interpretable text model, not the complete multimodal profile.
 
-Use to inspect the strongest learned feature weights for a domain.
+## `explain_text`
 
-Inputs:
-- `domain: str = "writing"`
-- `limit: int = 20`
-
-Returns feature, direction, weight, evidence-count confidence, update count, and update timestamp.
-
-Confidence is evidence-count based in v0.1. It is not a calibrated probability that a psychological statement is true.
-
-### `explain_text`
-
-Use to explain how one text candidate interacts with the learned weights.
-
-Inputs:
-- `text: str`
-- `domain: str = "writing"`
-
-Returns the score, extracted features, and strongest positive/negative contributions.
-
-## v0.1 model limitations
-
-The current extractor uses a compact interpretable lexical feature set. It can learn signals including brevity, specificity, corporate-language density, intensity, person references, questioning, structured formatting, uppercase emphasis, lexical variety, and sentence length.
-
-It does **not** yet understand the full semantic, aesthetic, contextual, visual, or multimodal structure of human taste.
-
-Therefore:
-
-- preserve uncertainty,
-- never imply the feature model is a complete representation of the user,
-- never generalize writing weights into unrelated domains,
-- prefer held-out evaluation over anecdotes,
-- keep evidence provenance intact,
-- do not commit private evidence or the local SQLite database to the public repository.
+Explains the lexical contribution of a raw text candidate.
 
 ## Evidence hierarchy
 
-Strong:
-1. explicit A > B choice,
-2. direct user edit where original and edited text are known.
+Strongest:
+1. repeated explicit pairwise choices,
+2. direct edits,
+3. explicit liked/disliked artifacts with rich inspected fingerprints,
+4. explicit single-reference style saves with sparse fingerprints.
 
-Not evidence in v0.1:
-- assistant speculation,
+Not evidence:
 - silence,
-- message sentiment alone,
 - demographic inference,
+- assistant speculation,
 - unrelated memories,
-- an unreviewed assistant output,
-- preferences inferred across domains.
+- an output merely being generated,
+- one domain being projected into another without instruction.
 
-## Architectural boundary
+## Privacy and copyright boundary
 
-The Skill defines **when and how** to use My Taste.
+Store preference abstractions and minimal provenance by default.
 
-The MCP server defines **live tools and controlled actions**.
-
-SQLite stores **private evidence and learned weights**.
-
-The public repository defines **code, protocol, tests, and synthetic fixtures**, not the user's private preference corpus.
+Do not use My Taste as a warehouse for complete copyrighted articles, videos, transcripts, image sets, or cloned websites. The useful object is the preference fingerprint, not an unnecessary copy of the source material.

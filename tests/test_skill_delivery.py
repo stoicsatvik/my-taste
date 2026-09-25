@@ -13,6 +13,7 @@ def test_skill_bundle_has_complete_manifest():
     paths = {resource.relative_path for resource in resources}
     assert paths == {
         "SKILL.md",
+        "references/deep-capture.md",
         "references/style-fingerprints.md",
         "references/tool-contract.md",
     }
@@ -32,7 +33,7 @@ def test_skill_extension_advertises_complete_catalog_entry():
     assert extension.identifier == "io.modelcontextprotocol/skills"
     assert extension.catalog_uri == "skill://my-taste/my-taste/SKILL.md"
     assert extension.entry["frontmatter"]["name"] == "my-taste"
-    assert len(extension.entry["resources"]) == 3
+    assert len(extension.entry["resources"]) == 4
     assert set(extension.resource_text) == {
         row["uri"] for row in extension.entry["resources"]
     }

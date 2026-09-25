@@ -6,6 +6,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 from .config import default_db_path
+from .connect import run_chatgpt_connection
 from .core.engine import TasteEngine
 
 
@@ -36,6 +37,17 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--db", default=str(default_db_path()), help="SQLite database path")
     sub = parser.add_subparsers(dest="command", required=True)
 
+    connect = sub.add_parser(
+        "connect",
+        help="Start My Taste and expose a temporary HTTPS MCP URL for ChatGPT testing",
+    )
+    connect.add_argument("--port", type=int, default=8000)
+    connect.add_argument(
+        "--no-download-cloudflared",
+        action="store_true",
+        help="Require cloudflared to already be installed",
+    )
+
     choice = sub.add_parser("observe-choice", help="Learn preferred > rejected")
     choice.add_argument("--preferred", required=True)
     choice.add_argument("--rejected", required=True)
@@ -64,6 +76,12 @@ def build_parser() -> argparse.ArgumentParser:
     retrieve.add_argument("--context-json", default={}, type=_json_object)
     retrieve.add_argument("--limit", type=int, default=8)
 
+    brief = sub.add_parser("brief", help="Build a context-specific prefer/avoid taste brief")
+    brief.add_argument("--domain", required=True)
+    brief.add_argument("--modality", default="")
+    brief.add_argument("--context-json", default={}, type=_json_object)
+    brief.add_argument("--limit", type=int, default=12)
+
     profile_rank = sub.add_parser("rank-profiles", help="Rank structured candidate fingerprints")
     profile_rank.add_argument("--domain", required=True)
     profile_rank.add_argument("--modality", default="")
@@ -87,6 +105,15 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main() -> None:
     args = build_parser().parse_args()
+
+    if args.command == "connect":
+        run_chatgpt_connection(
+            db_path=args.db,
+            port=args.port,
+            allow_cloudflared_download=not args.no_download_cloudflared,
+        )
+        return
+
     engine = TasteEngine(args.db)
 
     if args.command == "observe-choice":
@@ -110,6 +137,15 @@ def main() -> None:
     elif args.command == "retrieve":
         _print(
             engine.retrieve_taste(
+                domain=args.domain,
+                modality=args.modality,
+                context={str(k): str(v) for k, v in args.context_json.items()},
+                limit=args.limit,
+            )
+        )
+    elif args.command == "brief":
+        _print(
+            engine.taste_brief(
                 domain=args.domain,
                 modality=args.modality,
                 context={str(k): str(v) for k, v in args.context_json.items()},

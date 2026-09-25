@@ -4,7 +4,7 @@ import json
 import sqlite3
 from pathlib import Path
 
-from .models import Evidence, PreferenceWeight, utc_now_iso
+from .models import Evidence, PreferenceWeight, TasteEvidence, utc_now_iso
 
 
 class SQLiteTasteStore:
@@ -43,6 +43,26 @@ class SQLiteTasteStore:
                     updated_at TEXT NOT NULL,
                     PRIMARY KEY(domain, feature)
                 );
+
+                CREATE TABLE IF NOT EXISTS taste_evidence (
+                    id TEXT PRIMARY KEY,
+                    domain TEXT NOT NULL,
+                    modality TEXT NOT NULL,
+                    preference TEXT NOT NULL,
+                    strength REAL NOT NULL,
+                    context_json TEXT NOT NULL,
+                    features_json TEXT NOT NULL,
+                    source TEXT NOT NULL,
+                    source_reference TEXT NOT NULL,
+                    note TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_taste_evidence_domain_created
+                ON taste_evidence(domain, created_at DESC);
+
+                CREATE INDEX IF NOT EXISTS idx_taste_evidence_domain_modality
+                ON taste_evidence(domain, modality, created_at DESC);
                 """
             )
 
@@ -61,6 +81,33 @@ class SQLiteTasteStore:
                     evidence.context,
                     evidence.source,
                     json.dumps(evidence.payload, ensure_ascii=False, sort_keys=True),
+                    evidence.created_at,
+                ),
+            )
+
+    def add_taste_evidence(self, evidence: TasteEvidence) -> None:
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO taste_evidence
+                (
+                    id, domain, modality, preference, strength,
+                    context_json, features_json, source,
+                    source_reference, note, created_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    evidence.id,
+                    evidence.domain,
+                    evidence.modality,
+                    evidence.preference,
+                    float(evidence.strength),
+                    json.dumps(evidence.context, ensure_ascii=False, sort_keys=True),
+                    json.dumps(evidence.features, ensure_ascii=False, sort_keys=True),
+                    evidence.source,
+                    evidence.source_reference,
+                    evidence.note,
                     evidence.created_at,
                 ),
             )
@@ -123,6 +170,39 @@ class SQLiteTasteStore:
                 context=row["context"],
                 source=row["source"],
                 payload=json.loads(row["payload_json"]),
+                created_at=row["created_at"],
+            )
+            for row in rows
+        ]
+
+    def taste_evidence(self, domain: str, limit: int = 200) -> list[TasteEvidence]:
+        limit = max(1, min(int(limit), 1000))
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT
+                    id, domain, modality, preference, strength,
+                    context_json, features_json, source,
+                    source_reference, note, created_at
+                FROM taste_evidence
+                WHERE domain = ?
+                ORDER BY created_at DESC
+                LIMIT ?
+                """,
+                (domain, limit),
+            ).fetchall()
+        return [
+            TasteEvidence(
+                id=row["id"],
+                domain=row["domain"],
+                modality=row["modality"],
+                preference=row["preference"],
+                strength=float(row["strength"]),
+                context=json.loads(row["context_json"]),
+                features=json.loads(row["features_json"]),
+                source=row["source"],
+                source_reference=row["source_reference"],
+                note=row["note"],
                 created_at=row["created_at"],
             )
             for row in rows

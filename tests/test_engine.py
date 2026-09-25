@@ -232,3 +232,69 @@ def test_context_relevance_penalizes_wrong_surface(tmp_path):
 
     scores = {item["source_reference"]: item["relevance"] for item in hits}
     assert scores["landing"] > scores["dashboard"]
+
+
+def test_nested_deep_capture_features_rank_recursively(tmp_path):
+    engine = TasteEngine(tmp_path / "taste.db")
+    context = {"surface": "landing_page", "capture_fidelity": "static_raster"}
+
+    engine.observe_artifact(
+        domain="ui_design",
+        modality="screenshot",
+        context=context,
+        features={
+            "geometry": {"hero_height_ratio": 0.72, "content_width_ratio": 0.84},
+            "surface": {"radius_px": 12, "shadow": "subtle"},
+            "typography": {"display_scale": "oversized", "body_density": "low"},
+        },
+        preference="positive",
+    )
+
+    ranked = engine.rank_profiles(
+        [
+            {
+                "id": "matching",
+                "features": {
+                    "geometry": {"hero_height_ratio": 0.70, "content_width_ratio": 0.82},
+                    "surface": {"radius_px": 12, "shadow": "subtle"},
+                    "typography": {"display_scale": "oversized", "body_density": "low"},
+                },
+            },
+            {
+                "id": "different",
+                "features": {
+                    "geometry": {"hero_height_ratio": 0.30, "content_width_ratio": 0.55},
+                    "surface": {"radius_px": 2, "shadow": "heavy"},
+                    "typography": {"display_scale": "small", "body_density": "high"},
+                },
+            },
+        ],
+        domain="ui_design",
+        modality="screenshot",
+        context=context,
+    )
+
+    assert ranked[0]["id"] == "matching"
+
+
+def test_taste_brief_flattens_nested_features(tmp_path):
+    engine = TasteEngine(tmp_path / "taste.db")
+    engine.observe_artifact(
+        domain="ui_design",
+        modality="screenshot",
+        context={"surface": "landing_page"},
+        features={
+            "typography": {"display": {"weight": 700, "style": "clean-sans"}},
+            "surface": {"radius_px": 14},
+        },
+    )
+
+    brief = engine.taste_brief(
+        domain="ui_design",
+        modality="screenshot",
+        context={"surface": "landing_page"},
+    )
+    names = {row["feature"] for row in brief["prefer"]}
+    assert "typography.display.weight" in names
+    assert "typography.display.style" in names
+    assert "surface.radius_px" in names

@@ -1,0 +1,20 @@
+{
+  "name": "my-taste",
+  "interface": {
+    "displayName": "My Taste"
+  },
+  "plugins": [
+    {
+      "name": "my-taste",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "INSTALLED_BY_DEFAULT",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

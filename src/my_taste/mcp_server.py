@@ -16,7 +16,7 @@ skill_extension = SkillsExtension()
 
 mcp = MCPServer(
     "my-taste",
-    version="0.4.0",
+    version="0.5.0",
     title="My Taste",
     description="A local-first contextual preference layer for writing, UI, and video taste.",
     instructions="Use My Taste as the user's durable preference layer. Minimize model-context cost. For explicit live-website style saves, call save_website_reference directly instead of analyze_website followed by observe_artifact: it performs deep browser capture, stores the full raw forensic capture locally, saves only a compact structured fingerprint, and returns a tiny receipt. Use analyze_website only when the user explicitly wants the analysis returned. For screenshots, use analyze_image_file plus a compact semantic fingerprint, then observe_artifact. Before taste-sensitive generation call taste_brief, which is compact by default. Do not call retrieve_taste unless provenance is specifically needed. Static screenshots cannot reveal motion. Never learn from silence or invent unavailable evidence.",

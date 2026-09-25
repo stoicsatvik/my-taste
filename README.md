@@ -96,6 +96,27 @@ Initial MCP tools:
 - `taste_profile`
 - `explain_text`
 
+## Agent Skill
+
+The repository now includes an Agent Skills-compatible workflow at:
+
+```text
+skills/my-taste/
+├── SKILL.md
+└── references/
+    └── tool-contract.md
+```
+
+The skill is deliberately thin: it teaches an agent when to read, rank, explain, or update learned preferences while the MCP server remains the live preference engine. This prevents a static prompt from becoming a second, stale source of truth.
+
+Key behavior:
+
+- explicit user requirements and correctness come before taste optimization,
+- persisted taste is read through My Taste tools rather than invented from generic memory,
+- learning occurs only from explicit preference evidence,
+- writing preferences are not silently generalized into unrelated domains,
+- unsupported or weakly evidenced preferences remain uncertain.
+
 ## Architecture
 
 ```text
@@ -117,7 +138,7 @@ Preference engine
   +-- ranking + explanation
   |
   v
-MCP / CLI / future SDKs
+MCP / CLI / Agent Skill / future SDKs
 ```
 
 ## Design principles

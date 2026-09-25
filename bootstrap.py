@@ -9,7 +9,7 @@ import sys
 import venv
 from pathlib import Path
 
-REPO = "git+https://github.com/stoicsatvik/my-taste.git"
+REPO = "https://github.com/stoicsatvik/my-taste/archive/refs/heads/main.zip"
 
 
 def main() -> None:

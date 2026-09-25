@@ -168,15 +168,23 @@ class SkillsExtension(Extension):
         return {"skill": self.entry}
 
 
+def _make_reader(text: str, name: str):
+    def reader() -> str:
+        return text
+
+    reader.__name__ = name
+    return reader
+
+
 def register_skill_resources(server: Any, extension: SkillsExtension) -> None:
     for resource in extension.resources_manifest:
-        def reader(text: str = resource.text) -> str:
-            return text
-
-        reader.__name__ = "read_skill_" + re.sub(
-            r"[^A-Za-z0-9_]+",
-            "_",
-            resource.relative_path,
+        reader = _make_reader(
+            resource.text,
+            "read_skill_" + re.sub(
+                r"[^A-Za-z0-9_]+",
+                "_",
+                resource.relative_path,
+            ),
         )
         server.resource(
             resource.uri,

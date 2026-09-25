@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "my-taste",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "A local-first contextual preference layer that deeply captures and applies evidence-backed writing, UI, website, screenshot, and video taste.",
   "author": {
     "name": "Satvik"

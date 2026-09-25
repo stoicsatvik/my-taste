@@ -22,6 +22,23 @@ class Evidence:
 
 
 @dataclass(slots=True)
+class TasteEvidence:
+    """Portable structured preference evidence for any modality."""
+
+    domain: str
+    modality: str
+    features: dict[str, Any]
+    context: dict[str, str] = field(default_factory=dict)
+    preference: str = "positive"
+    strength: float = 1.0
+    source: str = "explicit_like"
+    source_reference: str = ""
+    note: str = ""
+    id: str = field(default_factory=lambda: str(uuid4()))
+    created_at: str = field(default_factory=utc_now_iso)
+
+
+@dataclass(slots=True)
 class PreferenceWeight:
     domain: str
     feature: str

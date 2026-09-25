@@ -18,7 +18,7 @@ jobs:
       - name: Test
         run: python -m pytest -q
       - name: Compile bootstrap and runtime
-        run: python -m py_compile bootstrap.py scripts/plugin_mcp_entry.py src/my_taste/connect.py src/my_taste/mcp_server.py src/my_taste/capture_store.py
+        run: python -m py_compile bootstrap.py scripts/plugin_mcp_entry.py hooks/session_start.py src/my_taste/connect.py src/my_taste/mcp_server.py src/my_taste/capture_store.py
       - name: Build skill package
         run: python scripts/package_skill.py
       - name: Build plugin package
@@ -34,11 +34,11 @@ jobs:
 
           plugin = json.loads(Path("plugin.json").read_text())
           assert plugin["name"] == "my-taste"
-          assert plugin["version"] == "0.4.0"
+          assert plugin["version"] == "0.5.0"
 
           codex_plugin = json.loads(Path(".codex-plugin/plugin.json").read_text())
           assert codex_plugin["name"] == "my-taste"
-          assert codex_plugin["version"] == "0.4.0"
+          assert codex_plugin["version"] == "0.5.0"
           assert codex_plugin["skills"] == "./skills/"
           assert codex_plugin["mcpServers"] == "./.mcp.json"
 
@@ -55,12 +55,18 @@ jobs:
 
           claude_plugin = json.loads(Path(".claude-plugin/plugin.json").read_text())
           assert claude_plugin["name"] == "my-taste"
-          assert claude_plugin["version"] == "0.4.0"
+          assert claude_plugin["version"] == "0.5.0"
           assert "my-taste" in claude_plugin["mcpServers"]
 
           claude_marketplace = json.loads(Path(".claude-plugin/marketplace.json").read_text())
           assert claude_marketplace["name"] == "my-taste"
           assert claude_marketplace["plugins"][0]["name"] == "my-taste"
+          assert claude_marketplace["plugins"][0]["version"] == "0.5.0"
+
+          hooks = json.loads(Path("hooks/hooks.json").read_text())
+          session = hooks["hooks"]["SessionStart"][0]["hooks"][0]
+          assert session["type"] == "command"
+          assert "session_start.py" in session["command"]
 
           marketplace = json.loads(Path(".agents/plugins/marketplace.json").read_text())
           assert marketplace["name"] == "my-taste"
@@ -84,6 +90,8 @@ jobs:
               assert "scripts/plugin_mcp_entry.py" in names
               assert "src/my_taste/media_analysis.py" in names
               assert "src/my_taste/capture_store.py" in names
+              assert "hooks/hooks.json" in names
+              assert "hooks/session_start.py" in names
 
           wheel = next(Path("dist/wheels").glob("my_taste-*.whl"))
           with zipfile.ZipFile(wheel) as z:

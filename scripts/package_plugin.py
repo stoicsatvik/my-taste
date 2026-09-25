@@ -19,6 +19,7 @@ INCLUDE_TREES = (
     "scripts",
     ".codex-plugin",
     ".claude-plugin",
+    "hooks",
 )
 
 

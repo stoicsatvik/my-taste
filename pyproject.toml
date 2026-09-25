@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "my-taste"
-version = "0.2.0"
+version = "0.3.0"
 description = "A local-first contextual preference layer for AI agents."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -12,6 +12,7 @@ license = {text = "MIT"}
 authors = [{name = "Satvik"}]
 dependencies = [
   "mcp[cli]>=2,<3",
+  "Pillow>=10,<13",
 ]
 
 [project.optional-dependencies]

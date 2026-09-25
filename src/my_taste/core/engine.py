@@ -265,10 +265,10 @@ class TasteEngine:
                 modality_score = 0.18 if modality == evidence.modality else -0.05
 
             relevance = (
-                0.58
-                + 0.24 * context_score
+                0.20
+                + 0.55 * context_score
                 + modality_score
-                + 0.05 * self._recency(evidence.created_at)
+                + 0.07 * self._recency(evidence.created_at)
             )
             relevance *= min(2.0, max(0.1, evidence.strength))
 
@@ -291,6 +291,111 @@ class TasteEngine:
 
         results.sort(key=lambda item: float(item["relevance"]), reverse=True)
         return results[: max(1, min(int(limit), 100))]
+
+
+    def taste_brief(
+        self,
+        *,
+        domain: str,
+        context: dict[str, str] | None = None,
+        modality: str = "",
+        limit: int = 12,
+        min_relevance: float = 0.35,
+    ) -> dict[str, object]:
+        """Summarize context-relevant evidence into actionable prefer/avoid guidance."""
+        evidence = [
+            item
+            for item in self.retrieve_taste(
+                domain=domain,
+                context=context,
+                modality=modality,
+                limit=max(limit * 4, 24),
+            )
+            if float(item["relevance"]) >= min_relevance
+        ][: max(1, min(int(limit), 100))]
+
+        buckets: dict[tuple[str, str], dict[str, object]] = {}
+        for item in evidence:
+            features = item.get("features", {})
+            if not isinstance(features, dict):
+                continue
+            sign = str(item.get("preference", "positive"))
+            weight = float(item.get("relevance", 0.0))
+            for feature, value in features.items():
+                key = (str(feature), repr(value))
+                bucket = buckets.setdefault(
+                    key,
+                    {
+                        "feature": str(feature),
+                        "value": value,
+                        "positive": 0.0,
+                        "negative": 0.0,
+                        "evidence_ids": [],
+                    },
+                )
+                if sign == "positive":
+                    bucket["positive"] = float(bucket["positive"]) + weight
+                else:
+                    bucket["negative"] = float(bucket["negative"]) + weight
+                cast_ids = bucket["evidence_ids"]
+                if isinstance(cast_ids, list):
+                    cast_ids.append(str(item["id"]))
+
+        prefer: list[dict[str, object]] = []
+        avoid: list[dict[str, object]] = []
+        conflicts: list[dict[str, object]] = []
+
+        for bucket in buckets.values():
+            positive = float(bucket["positive"])
+            negative = float(bucket["negative"])
+            support = positive + negative
+            if support <= 0:
+                continue
+
+            net = positive - negative
+            dominance = abs(net) / support
+            evidence_confidence = 1.0 - math.exp(-support / 1.5)
+            confidence = round(dominance * evidence_confidence, 6)
+
+            row = {
+                "feature": bucket["feature"],
+                "value": bucket["value"],
+                "support": round(support, 6),
+                "confidence": confidence,
+                "evidence_ids": bucket["evidence_ids"][:5],
+            }
+
+            if positive > 0 and negative > 0:
+                conflicts.append(
+                    {
+                        **row,
+                        "positive_support": round(positive, 6),
+                        "negative_support": round(negative, 6),
+                    }
+                )
+
+            if net > 0:
+                prefer.append(row)
+            elif net < 0:
+                avoid.append(row)
+
+        prefer.sort(key=lambda row: (float(row["confidence"]), float(row["support"])), reverse=True)
+        avoid.sort(key=lambda row: (float(row["confidence"]), float(row["support"])), reverse=True)
+        conflicts.sort(key=lambda row: float(row["support"]), reverse=True)
+
+        overall_support = sum(float(item["relevance"]) for item in evidence)
+        overall_confidence = 0.0 if not evidence else 1.0 - math.exp(-overall_support / 4.0)
+
+        return {
+            "domain": domain.strip().lower(),
+            "modality": modality.strip().lower(),
+            "context": context or {},
+            "evidence_count": len(evidence),
+            "confidence": round(overall_confidence, 6),
+            "prefer": prefer[:10],
+            "avoid": avoid[:10],
+            "conflicts": conflicts[:10],
+        }
 
     def rank_profiles(
         self,

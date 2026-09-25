@@ -1,0 +1,41 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "my-taste",
+  "version": "0.2.0",
+  "description": "A local-first contextual preference layer that learns explicit writing, UI, and video taste and applies it when relevant.",
+  "author": {
+    "name": "Satvik"
+  },
+  "homepage": "https://github.com/stoicsatvik/my-taste",
+  "repository": "https://github.com/stoicsatvik/my-taste",
+  "license": "MIT",
+  "keywords": [
+    "personalization",
+    "preferences",
+    "design",
+    "writing",
+    "video",
+    "mcp"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "My Taste",
+        "shortDescription": "Learn and apply your creative preferences.",
+        "longDescription": "Save explicit style references from writing, websites, screenshots, and video, then retrieve the right preferences automatically for future creative tasks.",
+        "developerName": "Satvik",
+        "category": "Productivity",
+        "capabilities": [
+          "Read",
+          "Write"
+        ],
+        "websiteURL": "https://github.com/stoicsatvik/my-taste",
+        "defaultPrompt": [
+          "I like this website screenshot. Analyze its design style and save it to My Taste.",
+          "Use my saved UI taste when creating this landing page.",
+          "I like how this Reel is edited. Save its video style."
+        ]
+      }
+    }
+  }
+}

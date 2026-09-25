@@ -1,0 +1,7 @@
+{
+  "name": "my-taste",
+  "version": "0.2.0",
+  "description": "Learn and automatically apply evidence-backed writing, UI, screenshot, and video taste across Codex sessions.",
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json"
+}

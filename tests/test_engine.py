@@ -163,3 +163,72 @@ def test_rank_profiles_uses_positive_and_negative_evidence(tmp_path):
     )
     assert ranked[0]["id"] == "quiet"
     assert ranked[0]["score"] > ranked[1]["score"]
+
+
+def test_taste_brief_applies_video_context_and_avoids_opposite_style(tmp_path):
+    engine = TasteEngine(tmp_path / "taste.db")
+    reel = {"platform": "instagram", "format": "reel", "goal": "retention"}
+
+    engine.observe_artifact(
+        domain="video",
+        modality="video",
+        context=reel,
+        features={"pacing": "fast", "captions": "minimal", "ending": "hard-stop"},
+        preference="positive",
+    )
+    engine.observe_artifact(
+        domain="video",
+        modality="video",
+        context=reel,
+        features={"pacing": "slow", "captions": "dense", "ending": "long-outro"},
+        preference="negative",
+    )
+    engine.observe_artifact(
+        domain="video",
+        modality="video",
+        context={"platform": "youtube", "format": "documentary", "goal": "explanation"},
+        features={"pacing": "slow", "captions": "minimal", "ending": "resolved"},
+        preference="positive",
+        source_reference="unrelated-documentary",
+    )
+
+    brief = engine.taste_brief(
+        domain="video",
+        modality="video",
+        context=reel,
+    )
+
+    preferred = {(row["feature"], str(row["value"])) for row in brief["prefer"]}
+    avoided = {(row["feature"], str(row["value"])) for row in brief["avoid"]}
+
+    assert ("pacing", "fast") in preferred
+    assert ("pacing", "slow") in avoided
+    assert brief["evidence_count"] >= 2
+    assert brief["confidence"] > 0
+
+
+def test_context_relevance_penalizes_wrong_surface(tmp_path):
+    engine = TasteEngine(tmp_path / "taste.db")
+    engine.observe_artifact(
+        domain="ui_design",
+        modality="website",
+        context={"surface": "landing_page", "goal": "conversion"},
+        features={"density": "low"},
+        source_reference="landing",
+    )
+    engine.observe_artifact(
+        domain="ui_design",
+        modality="website",
+        context={"surface": "admin_dashboard", "goal": "operations"},
+        features={"density": "high"},
+        source_reference="dashboard",
+    )
+
+    hits = engine.retrieve_taste(
+        domain="ui_design",
+        modality="website",
+        context={"surface": "landing_page", "goal": "conversion"},
+    )
+
+    scores = {item["source_reference"]: item["relevance"] for item in hits}
+    assert scores["landing"] > scores["dashboard"]

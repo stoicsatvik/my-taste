@@ -7,6 +7,9 @@ from mcp.server import MCPServer
 
 from .config import default_db_path
 from .core.engine import TasteEngine
+from .skill_delivery import SkillsExtension, register_skill_resources
+
+skill_extension = SkillsExtension()
 
 mcp = MCPServer(
     "my-taste",
@@ -15,7 +18,9 @@ mcp = MCPServer(
     description="A local-first contextual preference layer for writing, UI, and video taste.",
     instructions="Use My Taste as the user's durable preference layer. If the user explicitly likes/dislikes an inspectable text, website, screenshot, UI, or video reference, inspect it with the host's available perception tools, derive a reusable style fingerprint, then call observe_artifact. Before generating taste-sensitive writing, UI/design, branding, or video/editing work, call taste_brief with a compact task context and apply high-confidence prefer/avoid guidance. Do not learn from silence or unrelated memory. Do not claim My Taste itself can see media; the host model performs perception and supplies derived features.",
     website_url="https://github.com/stoicsatvik/my-taste",
+    extensions=[skill_extension],
 )
+register_skill_resources(mcp, skill_extension)
 engine = TasteEngine(default_db_path())
 
 

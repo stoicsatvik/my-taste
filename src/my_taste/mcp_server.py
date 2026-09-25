@@ -9,6 +9,7 @@ from .config import default_db_path
 from .core.engine import TasteEngine
 from .media_analysis import analyze_image_file as analyze_image_file_pixels
 from .skill_delivery import SkillsExtension, register_skill_resources
+from .web_analysis import analyze_website as analyze_live_website
 
 skill_extension = SkillsExtension()
 
@@ -52,6 +53,25 @@ def observe_edit(
 def analyze_image_file(path: str, palette_size: int = 12) -> dict[str, object]:
     """Measure deterministic pixel-level evidence from a local screenshot/image path. This does not infer semantics, animation, or interaction."""
     return analyze_image_file_pixels(path, palette_size=palette_size)
+
+
+
+@mcp.tool()
+def analyze_website(
+    url: str,
+    width: int = 1440,
+    height: int = 1000,
+    max_elements: int = 140,
+    settle_ms: int = 700,
+) -> dict[str, object]:
+    """Deeply inspect a public live website using Chrome: rendered pixels, DOM geometry, computed styles, CSS tokens, and observable animation timing."""
+    return analyze_live_website(
+        url,
+        width=width,
+        height=height,
+        max_elements=max_elements,
+        settle_ms=settle_ms,
+    )
 
 
 @mcp.tool()

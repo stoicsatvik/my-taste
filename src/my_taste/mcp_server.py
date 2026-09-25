@@ -5,6 +5,7 @@ from typing import Any
 
 from mcp.server import MCPServer
 
+from .capture_store import compact_receipt, compact_website_capture, save_raw_capture
 from .config import default_db_path
 from .core.engine import TasteEngine
 from .media_analysis import analyze_image_file as analyze_image_file_pixels
@@ -15,10 +16,10 @@ skill_extension = SkillsExtension()
 
 mcp = MCPServer(
     "my-taste",
-    version="0.3.0",
+    version="0.4.0",
     title="My Taste",
     description="A local-first contextual preference layer for writing, UI, and video taste.",
-    instructions="Use My Taste as the user's durable preference layer. Explicit requests to save/learn/copy a screenshot, website, UI, text, or video style require deep capture, not a shallow vibe summary. For local screenshots, call analyze_image_file when a readable file path is available, then combine deterministic pixel evidence with semantic vision analysis. Static screenshots cannot reveal motion: mark animation/interaction as unobserved unless a live site, multiple states, or video/screen recording is actually inspected. Persist the nested fingerprint with observe_artifact. Before taste-sensitive writing/UI/video generation, call taste_brief with a compact task context and apply high-confidence guidance. Never learn from silence or invent unavailable evidence.",
+    instructions="Use My Taste as the user's durable preference layer. Minimize model-context cost. For explicit live-website style saves, call save_website_reference directly instead of analyze_website followed by observe_artifact: it performs deep browser capture, stores the full raw forensic capture locally, saves only a compact structured fingerprint, and returns a tiny receipt. Use analyze_website only when the user explicitly wants the analysis returned. For screenshots, use analyze_image_file plus a compact semantic fingerprint, then observe_artifact. Before taste-sensitive generation call taste_brief, which is compact by default. Do not call retrieve_taste unless provenance is specifically needed. Static screenshots cannot reveal motion. Never learn from silence or invent unavailable evidence.",
     website_url="https://github.com/stoicsatvik/my-taste",
     extensions=[skill_extension],
 )
@@ -64,14 +65,70 @@ def analyze_website(
     max_elements: int = 140,
     settle_ms: int = 700,
 ) -> dict[str, object]:
-    """Deeply inspect a public live website using Chrome: rendered pixels, DOM geometry, computed styles, CSS tokens, and observable animation timing."""
-    return analyze_live_website(
+    """Return a compact forensic website fingerprint. Raw DOM/CSS/motion capture stays server-side to avoid flooding model context."""
+    raw = analyze_live_website(
         url,
         width=width,
         height=height,
         max_elements=max_elements,
         settle_ms=settle_ms,
     )
+    return compact_website_capture(raw)
+
+
+@mcp.tool()
+def save_website_reference(
+    url: str,
+    context: dict[str, str] | None = None,
+    preference: str = "positive",
+    strength: float = 1.0,
+    semantic_features: dict[str, Any] | None = None,
+    width: int = 1440,
+    height: int = 1000,
+    max_elements: int = 140,
+    settle_ms: int = 700,
+) -> dict[str, object]:
+    """Deep-capture a live website and save it with minimal token output.
+
+    Full forensic DOM/CSS/motion data is gzip-compressed locally. Only a compact
+    preference fingerprint is stored in the taste DB and a tiny receipt is
+    returned to the model.
+    """
+    raw = analyze_live_website(
+        url,
+        width=width,
+        height=height,
+        max_elements=max_elements,
+        settle_ms=settle_ms,
+    )
+    fingerprint = compact_website_capture(raw)
+    if semantic_features:
+        fingerprint["semantic"] = semantic_features
+
+    clean_context = dict(context or {})
+    clean_context.setdefault("capture_fidelity", "live_forensic_compact")
+
+    saved = engine.observe_artifact(
+        domain="ui_design",
+        modality="website",
+        features=fingerprint,
+        context=clean_context,
+        preference=preference,
+        strength=strength,
+        source="deep_website_capture",
+        source_reference=url,
+        note="Full raw capture stored locally outside model context.",
+    )
+    evidence_id = str(saved["evidence_id"])
+    raw_meta = save_raw_capture(engine.store.path, evidence_id, raw)
+    return {
+        "saved": True,
+        "evidence_id": evidence_id,
+        "domain": "ui_design",
+        "modality": "website",
+        "context": clean_context,
+        "receipt": compact_receipt(fingerprint, raw_meta),
+    }
 
 
 @mcp.tool()
@@ -120,15 +177,45 @@ def taste_brief(
     domain: str,
     context: dict[str, str] | None = None,
     modality: str = "",
-    limit: int = 12,
+    limit: int = 6,
+    verbose: bool = False,
 ) -> dict[str, object]:
-    """Call before taste-sensitive writing/UI/video generation to get context-specific prefer, avoid, conflict, and confidence guidance."""
-    return engine.taste_brief(
+    """Return a token-efficient context-specific taste brief. Set verbose=true only when provenance/support details are needed."""
+    full = engine.taste_brief(
         domain=domain,
         context=context,
         modality=modality,
-        limit=limit,
+        limit=max(1, min(int(limit), 12)),
     )
+    if verbose:
+        return full
+
+    def compact_rows(rows: object, row_limit: int) -> list[dict[str, object]]:
+        if not isinstance(rows, list):
+            return []
+        output: list[dict[str, object]] = []
+        for row in rows[:row_limit]:
+            if not isinstance(row, dict):
+                continue
+            output.append(
+                {
+                    "feature": row.get("feature"),
+                    "value": row.get("value"),
+                    "confidence": row.get("confidence"),
+                }
+            )
+        return output
+
+    max_items = max(1, min(int(limit), 8))
+    return {
+        "domain": full.get("domain"),
+        "modality": full.get("modality"),
+        "evidence_count": full.get("evidence_count"),
+        "confidence": full.get("confidence"),
+        "prefer": compact_rows(full.get("prefer"), max_items),
+        "avoid": compact_rows(full.get("avoid"), max_items),
+        "conflicts": compact_rows(full.get("conflicts"), min(3, max_items)),
+    }
 
 
 @mcp.tool()

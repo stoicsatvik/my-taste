@@ -58,6 +58,64 @@ def analyze_image_file(path: str, palette_size: int = 12) -> dict[str, object]:
 
 
 @mcp.tool()
+def save_image_reference(
+    path: str,
+    context: dict[str, str] | None = None,
+    preference: str = "positive",
+    strength: float = 1.0,
+    semantic_features: dict[str, Any] | None = None,
+) -> dict[str, object]:
+    """Save a local screenshot/image reference in one token-efficient call.
+
+    Pixel evidence is measured server-side. The host may add a compact semantic
+    fingerprint, but the large intermediate pixel analysis is not echoed back.
+    """
+    pixels = analyze_image_file_pixels(path)
+    fingerprint: dict[str, Any] = {
+        "capture": {
+            "kind": "static_raster",
+            "motion_observable": False,
+            "interaction_observable": False,
+        },
+        "pixels": pixels,
+    }
+    if semantic_features:
+        fingerprint["semantic"] = semantic_features
+
+    clean_context = dict(context or {})
+    clean_context.setdefault("capture_fidelity", "static_raster")
+    saved = engine.observe_artifact(
+        domain="ui_design",
+        modality="screenshot",
+        features=fingerprint,
+        context=clean_context,
+        preference=preference,
+        strength=strength,
+        source="deep_image_capture",
+        source_reference=f"sha256:{pixels['capture']['sha256']}",
+        note="Static raster capture; motion and interaction intentionally unobserved.",
+    )
+    palette = pixels.get("palette") if isinstance(pixels.get("palette"), dict) else {}
+    geometry = pixels.get("geometry") if isinstance(pixels.get("geometry"), dict) else {}
+    return {
+        "saved": True,
+        "evidence_id": saved["evidence_id"],
+        "domain": "ui_design",
+        "modality": "screenshot",
+        "fidelity": "static_raster",
+        "dimensions": {
+            "width_px": geometry.get("width_px"),
+            "height_px": geometry.get("height_px"),
+        },
+        "dominant_colors": [
+            row.get("hex")
+            for row in (palette.get("dominant_colors") or [])[:5]
+            if isinstance(row, dict)
+        ],
+    }
+
+
+@mcp.tool()
 def analyze_website(
     url: str,
     width: int = 1440,

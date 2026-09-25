@@ -154,6 +154,23 @@ A video-capable agent can sample a liked Reel and store:
 
 Future Reel tasks can retrieve this. A long documentary task should not blindly inherit it because context is part of the evidence.
 
+## One-line Codex install
+
+In Codex with Full access, run:
+
+```bash
+codex plugin marketplace add stoicsatvik/my-taste
+```
+
+This repository is itself a Codex Git marketplace. Its single `my-taste` plugin is marked `INSTALLED_BY_DEFAULT` and bundles:
+
+- the My Taste skill,
+- a local stdio MCP server,
+- a first-run isolated Python runtime,
+- persistent preference data at `~/.my_taste/taste.db`.
+
+The first MCP launch installs Python dependencies into `~/.my_taste/codex-runtime`; protocol output remains clean because setup logs are sent to stderr. Start a new Codex chat after installation so the plugin and skill are loaded.
+
 ## Try it with ChatGPT
 
 For a temporary local-first test, install/update My Taste from this repository, start the MCP server, and expose it through a verified Cloudflare Quick Tunnel with one command:

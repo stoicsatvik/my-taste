@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import shutil
 import subprocess
 import sys
 import venv
@@ -10,8 +11,20 @@ from pathlib import Path
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 STATE_ROOT = Path.home() / ".my_taste"
-RUNTIME_ROOT = STATE_ROOT / "codex-runtime"
+RUNTIME_ROOT = STATE_ROOT / "runtime"
 STAMP = RUNTIME_ROOT / ".source-stamp"
+
+
+def _bootstrap_python() -> Path:
+    if sys.version_info >= (3, 10):
+        return Path(sys.executable)
+
+    for name in ("python3.13", "python3.12", "python3.11", "python3.10"):
+        candidate = shutil.which(name)
+        if candidate:
+            return Path(candidate)
+
+    raise RuntimeError("My Taste requires Python 3.10 or newer.")
 
 
 def runtime_python() -> Path:
@@ -22,15 +35,13 @@ def runtime_python() -> Path:
 
 def source_stamp() -> str:
     digest = hashlib.sha256()
-    for relative in (
-        "pyproject.toml",
-        "src/my_taste/mcp_server.py",
-        "src/my_taste/core/engine.py",
-        "src/my_taste/core/store.py",
-        "src/my_taste/skill_delivery.py",
-        "skills/my-taste/SKILL.md",
-    ):
-        path = PLUGIN_ROOT / relative
+    paths: list[Path] = [PLUGIN_ROOT / "pyproject.toml"]
+    for root in (PLUGIN_ROOT / "src" / "my_taste", PLUGIN_ROOT / "skills" / "my-taste"):
+        if root.exists():
+            paths.extend(path for path in root.rglob("*") if path.is_file())
+
+    for path in sorted(paths):
+        relative = path.relative_to(PLUGIN_ROOT).as_posix()
         digest.update(relative.encode("utf-8"))
         digest.update(path.read_bytes())
     return digest.hexdigest()
@@ -46,12 +57,17 @@ def install_runtime() -> Path:
         return python
 
     if not python.exists():
-        venv.EnvBuilder(with_pip=True).create(RUNTIME_ROOT)
+        bootstrap = _bootstrap_python()
+        subprocess.check_call(
+            [str(bootstrap), "-m", "venv", str(RUNTIME_ROOT)],
+            stdout=sys.stderr,
+            stderr=sys.stderr,
+        )
 
     python = runtime_python()
 
-    # MCP speaks over stdout. Send all installation chatter to stderr so the
-    # protocol stream remains clean even on first launch.
+    # MCP owns stdout. Keep installation chatter on stderr so the protocol
+    # stream stays valid even on the first launch.
     subprocess.check_call(
         [
             str(python),
@@ -75,6 +91,7 @@ def main() -> None:
     python = install_runtime()
 
     env = os.environ.copy()
+    # Deliberately shared across Codex and Claude Code.
     env["MY_TASTE_DB"] = str(STATE_ROOT / "taste.db")
     env["MY_TASTE_MCP_TRANSPORT"] = "stdio"
 

@@ -8,7 +8,14 @@ from mcp.server import MCPServer
 from .config import default_db_path
 from .core.engine import TasteEngine
 
-mcp = MCPServer("My Taste")
+mcp = MCPServer(
+    "my-taste",
+    version="0.2.0",
+    title="My Taste",
+    description="A local-first contextual preference layer for writing, UI, and video taste.",
+    instructions="Use My Taste as the user's durable preference layer. If the user explicitly likes/dislikes an inspectable text, website, screenshot, UI, or video reference, inspect it with the host's available perception tools, derive a reusable style fingerprint, then call observe_artifact. Before generating taste-sensitive writing, UI/design, branding, or video/editing work, call taste_brief with a compact task context and apply high-confidence prefer/avoid guidance. Do not learn from silence or unrelated memory. Do not claim My Taste itself can see media; the host model performs perception and supplies derived features.",
+    website_url="https://github.com/stoicsatvik/my-taste",
+)
 engine = TasteEngine(default_db_path())
 
 
@@ -19,7 +26,7 @@ def observe_choice(
     domain: str = "writing",
     context: str = "",
 ) -> dict[str, object]:
-    """Learn from an explicit pairwise preference: preferred > rejected."""
+    """Learn from an explicit pairwise text preference: preferred > rejected."""
     return engine.observe_choice(preferred, rejected, domain=domain, context=context)
 
 
@@ -45,7 +52,7 @@ def observe_artifact(
     source_reference: str = "",
     note: str = "",
 ) -> dict[str, object]:
-    """Store an explicitly liked or disliked style fingerprint from text, UI, video, or another artifact."""
+    """Persist a style fingerprint after the host has inspected an explicitly liked/disliked text, UI, screenshot, website, or video reference."""
     return engine.observe_artifact(
         domain=domain,
         modality=modality,
@@ -66,14 +73,13 @@ def retrieve_taste(
     modality: str = "",
     limit: int = 8,
 ) -> list[dict[str, object]]:
-    """Retrieve the most context-relevant learned taste evidence for a task."""
+    """Retrieve individual context-relevant taste evidence, including provenance."""
     return engine.retrieve_taste(
         domain=domain,
         context=context,
         modality=modality,
         limit=limit,
     )
-
 
 
 @mcp.tool()
@@ -83,7 +89,7 @@ def taste_brief(
     modality: str = "",
     limit: int = 12,
 ) -> dict[str, object]:
-    """Return an actionable context-specific brief of what to prefer, avoid, or treat as conflicted."""
+    """Call before taste-sensitive writing/UI/video generation to get context-specific prefer, avoid, conflict, and confidence guidance."""
     return engine.taste_brief(
         domain=domain,
         context=context,
@@ -110,7 +116,7 @@ def rank_profiles(
 
 @mcp.tool()
 def rank_text(candidates: list[str], domain: str = "writing") -> list[dict[str, object]]:
-    """Rank candidate text outputs according to the learned user preference model."""
+    """Rank raw text candidates using the interpretable lexical preference model."""
     return [
         {
             "text": item.text,

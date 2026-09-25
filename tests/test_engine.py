@@ -51,3 +51,115 @@ def test_identical_choice_is_rejected(tmp_path):
         assert "must differ" in str(exc)
     else:
         raise AssertionError("expected ValueError")
+
+
+def test_observe_and_retrieve_ui_artifact(tmp_path):
+    engine = TasteEngine(tmp_path / "taste.db")
+    saved = engine.observe_artifact(
+        domain="ui_design",
+        modality="website",
+        context={"surface": "landing_page", "industry": "saas"},
+        features={
+            "density": "low",
+            "whitespace": "high",
+            "palette": ["neutral", "single_accent"],
+            "border_radius": "medium",
+        },
+        source_reference="https://example.test",
+    )
+    assert saved["feature_count"] == 4
+
+    hits = engine.retrieve_taste(
+        domain="ui_design",
+        modality="website",
+        context={"surface": "landing_page", "industry": "saas"},
+    )
+    assert hits[0]["source_reference"] == "https://example.test"
+    assert hits[0]["features"]["density"] == "low"
+
+
+def test_context_retrieval_prefers_closer_match(tmp_path):
+    engine = TasteEngine(tmp_path / "taste.db")
+    engine.observe_artifact(
+        domain="writing",
+        modality="text",
+        context={"surface": "cold_email", "audience": "founder"},
+        features={"tone": "direct", "sentence_length": "short"},
+        source_reference="cold",
+    )
+    engine.observe_artifact(
+        domain="writing",
+        modality="text",
+        context={"surface": "essay", "audience": "student"},
+        features={"tone": "reflective", "sentence_length": "long"},
+        source_reference="essay",
+    )
+
+    hits = engine.retrieve_taste(
+        domain="writing",
+        modality="text",
+        context={"surface": "cold_email", "audience": "founder"},
+    )
+    assert hits[0]["source_reference"] == "cold"
+
+
+def test_video_style_can_be_saved_and_retrieved(tmp_path):
+    engine = TasteEngine(tmp_path / "taste.db")
+    engine.observe_artifact(
+        domain="video",
+        modality="video",
+        context={"platform": "instagram", "format": "reel"},
+        features={
+            "hook": "immediate",
+            "pacing": "fast",
+            "captions": "minimal",
+            "cuts_per_minute": 18,
+            "camera_motion": "restrained",
+        },
+        source_reference="video:fixture-1",
+    )
+
+    hits = engine.retrieve_taste(
+        domain="video",
+        modality="video",
+        context={"platform": "instagram", "format": "reel"},
+    )
+    assert hits
+    assert hits[0]["features"]["pacing"] == "fast"
+
+
+def test_rank_profiles_uses_positive_and_negative_evidence(tmp_path):
+    engine = TasteEngine(tmp_path / "taste.db")
+    context = {"surface": "dashboard"}
+    engine.observe_artifact(
+        domain="ui_design",
+        modality="website",
+        context=context,
+        features={"density": "low", "shadow": "subtle", "palette": ["neutral"]},
+        preference="positive",
+    )
+    engine.observe_artifact(
+        domain="ui_design",
+        modality="website",
+        context=context,
+        features={"density": "high", "shadow": "heavy", "palette": ["neon"]},
+        preference="negative",
+    )
+
+    ranked = engine.rank_profiles(
+        [
+            {
+                "id": "quiet",
+                "features": {"density": "low", "shadow": "subtle", "palette": ["neutral"]},
+            },
+            {
+                "id": "loud",
+                "features": {"density": "high", "shadow": "heavy", "palette": ["neon"]},
+            },
+        ],
+        domain="ui_design",
+        modality="website",
+        context=context,
+    )
+    assert ranked[0]["id"] == "quiet"
+    assert ranked[0]["score"] > ranked[1]["score"]

@@ -2,117 +2,147 @@
 
 ## Mission
 
-Build a local-first, user-owned multimodal preference layer that predicts what a user would choose, then exposes that learned taste to AI agents through MCP.
+Build a local-first, user-owned multimodal preference layer that predicts what a user would choose and gives AI agents the right preference context at the right moment.
 
 Core objective:
 
 `P(candidate_i > candidate_j | user, domain, context, evidence, history)`
 
-This is a preference-learning system, not merely a memory store.
+This is a preference-learning and retrieval system, not merely a memory store.
 
 ## Current status
 
-**Claim status: SUPPORTED**
+**Claim status: SUPPORTED WITH BOUNDED MULTIMODALITY**
 
-v0.1 has a working text preference baseline:
+The repository now has two working layers.
 
-- SQLite evidence persistence
+### Pairwise text model
+
 - explicit pairwise choice learning
 - edit-as-preference learning
-- interpretable text feature extraction
-- candidate ranking
-- explanations and confidence estimates
-- CLI
-- MCP server bindings
-- deterministic unit tests
+- interpretable lexical feature extraction
+- online preference weights
+- raw text ranking and explanation
 
-Current baseline tests: 5 passing.
+### Contextual structured evidence layer
 
-## Foundry doctrine for this repo
+- universal multimodal `TasteEvidence`
+- domain and modality separation
+- structured context tags
+- positive / negative artifact preferences
+- provenance references
+- relevance-ranked contextual retrieval
+- generic structured candidate ranking
+- CLI and MCP exposure
+- Agent Skill workflows for writing, websites/UI, and video references
+
+The multimodal path is currently **agent-mediated**:
+
+`agent perception -> structured fingerprint -> My Taste persistence/retrieval`
+
+The core does not yet directly run computer vision, frame extraction, or audio analysis.
+
+## Foundry doctrine
 
 1. Make substantive tested progress, not cosmetic commits.
-2. Preserve a simple baseline while introducing stronger challengers.
-3. Evaluate on held-out pairwise choices before claiming personalization gains.
-4. Keep raw personal evidence local-first by default.
-5. Every learned preference must retain provenance to its evidence.
-6. Separate domains and contexts; do not silently generalize writing taste into unrelated domains.
-7. Track uncertainty, contradictions, preference drift, and abstention rather than forcing confident predictions.
-8. Prefer pluggable encoders/rankers so the protocol and evidence store survive model changes.
-9. Never commit private user evidence, message exports, screenshots, credentials, or sensitive personal datasets to this public repository.
+2. Preserve simple baselines while introducing stronger challengers.
+3. Evaluate on held-out choices before claiming personalization gains.
+4. Keep private evidence local-first by default.
+5. Every learned preference retains provenance.
+6. Context is part of taste; do not silently generalize across domains or surfaces.
+7. Track uncertainty, contradiction, drift, and abstention rather than forcing confidence.
+8. Keep perception adapters replaceable so evidence survives model/provider changes.
+9. Never commit private user evidence, exports, screenshots, credentials, or sensitive datasets to this public repo.
 10. Public fixtures must be synthetic, consented, or safely anonymized.
 
-## Highest-priority build sequence
+## Current capability path
 
-### V0.2 — Context + provenance
+### Website / UI
 
-- context tags and context-conditioned scoring
-- provenance retrieval API
-- contradiction tracking
-- preference confidence/calibration
-- JSON export/import
-- domain permission scopes
-- pluggable text encoder interface
-- held-out pairwise benchmark harness
+```text
+user likes page
+  -> capable agent inspects page/screenshots
+  -> extracts design grammar
+  -> observe_artifact(ui_design, website, ...)
+  -> future UI task
+  -> retrieve_taste(ui_design, task context)
+  -> apply / rank candidate fingerprints
+```
 
-Promotion gate: context-aware challenger must outperform or materially improve calibration over v0.1 on deterministic/sealed evaluation without breaking existing tests.
+### Writing
 
-### V0.3 — Screenshots + images
+```text
+single liked sample
+  -> style fingerprint
+  -> observe_artifact(writing, text, ...)
 
-- image/screenshot evidence schema
-- perceptual hash + metadata
-- vision adapter interface
-- visual preference dimensions such as hierarchy, density, spacing, typography, composition
-- pairwise visual ranking
-- image TasteBench fixtures
+pairwise choice or edit
+  -> lexical online learner
+  -> stronger comparative signal
+```
 
-Promotion gate: demonstrate reproducible held-out visual preference prediction above simple metadata/profile baselines.
+### Video
 
-### V0.4 — Video + audio
+```text
+user likes video
+  -> capable agent samples multiple moments
+  -> extracts editing/narrative/visual/audio fingerprint
+  -> observe_artifact(video, video, ...)
+  -> future matching video task
+  -> retrieve_taste(video, platform/format/goal)
+```
 
+## Highest-priority next sequence
+
+### 1. Contradiction + confidence
+
+- feature-level support counts
+- conflicting positive/negative evidence
+- calibrated confidence
+- explicit abstention threshold
+- preference drift handling
+
+### 2. Direct local perception adapters
+
+UI/image:
+- screenshot metadata
+- perceptual hashes
+- pluggable vision encoder
+- automated fingerprint extraction
+
+Video:
 - frame/scene sampling
+- measured cuts / shot duration
 - transcript ingestion
-- pacing/editing features
-- audio adapter
-- multimodal fusion
+- audio feature adapter
 
-Promotion gate: multimodal model must beat single-modality baselines on sealed held-out choices under matched budgets.
-
-### V0.5 — Portable taste layer
-
-- Python/TypeScript SDKs
-- agent-readable resources
-- scoped taste permissions
-- browser extension feedback capture
-- platform-history importers
-
-## Research track — TasteBench
+### 3. TasteBench
 
 Compare under matched evidence and budgets:
 
-1. base model with no user context
+1. base model
 2. written preference profile
-3. RAG over user memories
-4. My Taste v0.1 interpretable ranker
-5. contextual My Taste
-6. multimodal My Taste
+3. memory/RAG
+4. pairwise lexical My Taste
+5. contextual structured My Taste
+6. direct multimodal My Taste
 
-Primary metrics:
-
+Metrics:
 - pairwise preference accuracy
 - calibration / Brier score
 - abstention quality
 - sample efficiency
 - adaptation to preference drift
-- domain leakage / unwanted generalization
+- domain leakage
 
 ## Current blockers / unknowns
 
-- No context-conditioned model yet.
-- No sealed benchmark dataset yet.
-- No screenshot/image implementation yet.
-- No contradiction/drift model yet.
-- MCP integration exists but needs client-side interoperability validation.
+- No calibrated contradiction/drift model yet.
+- No sealed contextual benchmark yet.
+- No direct local vision/video extraction yet.
+- No embedding-backed semantic retrieval yet.
+- Remote MCP interoperability still needs end-to-end client validation.
 
 ## Next best move
 
-Build V0.2 context-conditioned preference learning plus a deterministic held-out pairwise benchmark before adding vision complexity.
+Validate the new contextual evidence layer end-to-end through ChatGPT/MCP, then add direct video/UI perception adapters behind the same evidence contract.

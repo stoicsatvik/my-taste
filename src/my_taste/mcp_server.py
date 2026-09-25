@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 from mcp.server import MCPServer
 
 from .config import default_db_path
@@ -59,7 +61,27 @@ def explain_text(text: str, domain: str = "writing") -> dict[str, object]:
 
 
 def main() -> None:
-    mcp.run()
+    transport = os.getenv("MY_TASTE_MCP_TRANSPORT", "stdio").strip().lower()
+
+    if transport == "stdio":
+        mcp.run()
+        return
+
+    if transport in {"streamable-http", "streamable_http", "http"}:
+        host = os.getenv("MY_TASTE_MCP_HOST", "127.0.0.1")
+        port = int(os.getenv("MY_TASTE_MCP_PORT", "8000"))
+        mcp.run(
+            transport="streamable-http",
+            host=host,
+            port=port,
+            stateless_http=True,
+            json_response=True,
+        )
+        return
+
+    raise ValueError(
+        "MY_TASTE_MCP_TRANSPORT must be 'stdio' or 'streamable-http'"
+    )
 
 
 if __name__ == "__main__":

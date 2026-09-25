@@ -34,10 +34,11 @@ jobs:
 
           plugin = json.loads(Path("plugin.json").read_text())
           assert plugin["name"] == "my-taste"
-          assert plugin["version"] == "0.2.0"
+          assert plugin["version"] == "0.3.0"
 
           codex_plugin = json.loads(Path(".codex-plugin/plugin.json").read_text())
           assert codex_plugin["name"] == "my-taste"
+          assert codex_plugin["version"] == "0.3.0"
           assert codex_plugin["skills"] == "./skills/"
           assert codex_plugin["mcpServers"] == "./.mcp.json"
 
@@ -46,6 +47,20 @@ jobs:
           assert server["type"] == "stdio"
           assert server["command"] == "python3"
           assert server["args"] == ["./scripts/plugin_mcp_entry.py"]
+
+          portable_mcp = json.loads(Path("mcp.json").read_text())
+          portable_server = portable_mcp["mcpServers"]["my-taste"]
+          assert portable_server["type"] == "stdio"
+          assert portable_server["command"] == "python3"
+
+          claude_plugin = json.loads(Path(".claude-plugin/plugin.json").read_text())
+          assert claude_plugin["name"] == "my-taste"
+          assert claude_plugin["version"] == "0.3.0"
+          assert "my-taste" in claude_plugin["mcpServers"]
+
+          claude_marketplace = json.loads(Path(".claude-plugin/marketplace.json").read_text())
+          assert claude_marketplace["name"] == "my-taste"
+          assert claude_marketplace["plugins"][0]["name"] == "my-taste"
 
           marketplace = json.loads(Path(".agents/plugins/marketplace.json").read_text())
           assert marketplace["name"] == "my-taste"
@@ -61,12 +76,19 @@ jobs:
           with zipfile.ZipFile("dist/my-taste-plugin.zip") as z:
               names = set(z.namelist())
               assert "plugin.json" in names
+              assert "mcp.json" in names
               assert "skills/my-taste/SKILL.md" in names
+              assert "skills/my-taste/references/deep-capture.md" in names
+              assert ".claude-plugin/plugin.json" in names
+              assert ".codex-plugin/plugin.json" in names
+              assert "scripts/plugin_mcp_entry.py" in names
+              assert "src/my_taste/media_analysis.py" in names
 
           wheel = next(Path("dist/wheels").glob("my_taste-*.whl"))
           with zipfile.ZipFile(wheel) as z:
               names = set(z.namelist())
               assert "my_taste/skill_bundle/SKILL.md" in names
+              assert "my_taste/skill_bundle/references/deep-capture.md" in names
               assert "my_taste/skill_bundle/references/style-fingerprints.md" in names
               assert "my_taste/skill_bundle/references/tool-contract.md" in names
           PY

@@ -1,5 +1,52 @@
 # My Taste MCP tool contract
 
+## Low-token primary path
+
+### `save_website_reference`
+
+Preferred tool for an explicit liked/disliked **live website**.
+
+It performs, inside the MCP process:
+
+```text
+browser capture
+-> DOM/CSS/pixel/motion forensic data
+-> compact fingerprint
+-> taste evidence save
+-> gzip raw sidecar
+-> tiny receipt
+```
+
+The raw element/style/animation dump is not returned to the model.
+
+Inputs include:
+- `url`
+- compact `context`
+- `preference`
+- `strength`
+- optional compact `semantic_features`
+
+### `save_image_reference`
+
+Preferred tool for an explicit liked/disliked local screenshot/image when a readable path exists.
+
+Pixel evidence is calculated server-side and saved with optional compact host-derived semantic features. Motion/interaction remain unobserved for a still image.
+
+### `taste_brief`
+
+Preferred retrieval tool for ordinary generation. It is compact by default and returns only feature, value, and confidence for a small number of `prefer`, `avoid`, and conflict rules.
+
+Use `verbose=true` only when support/provenance details materially matter.
+
+### `analyze_website`
+
+Returns a **compact forensic fingerprint**, not the raw browser dump.
+
+Use only when the user explicitly asks to inspect/explain the analysis. For saving, use `save_website_reference` instead.
+
+---
+
+
 The MCP server is the durable preference layer. The Agent Skill decides when to call these tools. The server also advertises core workflow instructions so the save/retrieve loop still works during direct MCP testing.
 
 ## `observe_artifact`

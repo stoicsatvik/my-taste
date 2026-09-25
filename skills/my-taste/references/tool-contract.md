@@ -1,10 +1,10 @@
 # My Taste MCP tool contract
 
-The MCP server is the durable preference layer. The Agent Skill decides when to call these tools.
+The MCP server is the durable preference layer. The Agent Skill decides when to call these tools. The server also advertises core workflow instructions so the save/retrieve loop still works during direct MCP testing.
 
 ## `observe_artifact`
 
-Store an explicitly liked or disliked structured style fingerprint.
+Persist an explicitly liked or disliked structured style fingerprint **after the calling agent has actually inspected the reference**.
 
 Inputs:
 - `domain: str`
@@ -22,11 +22,30 @@ Use this for:
 - a liked/disliked video,
 - future modalities represented by structured fingerprints.
 
-The perception step belongs to the calling agent. My Taste stores the derived evidence and does not pretend it independently watched a video or browsed a website.
+The perception step belongs to the calling agent. My Taste stores the derived evidence and does not pretend it independently watched a video, read an unattached image, or browsed a website.
+
+## `taste_brief`
+
+Preferred tool before generating taste-sensitive output.
+
+Inputs:
+- `domain: str`
+- `context: object | null`
+- `modality: str = ""`
+- `limit: int = 12`
+
+Returns:
+- `prefer`: context-relevant positive feature/value guidance,
+- `avoid`: context-relevant negative feature/value guidance,
+- `conflicts`: features with both positive and negative support,
+- `confidence`,
+- `evidence_count`.
+
+Apply high-confidence guidance, avoid forcing conflicts, and fall back to explicit user instructions when evidence is weak.
 
 ## `retrieve_taste`
 
-Retrieve the most relevant evidence for the current context.
+Retrieve individual context-relevant evidence when provenance or the original fingerprints are useful.
 
 Inputs:
 - `domain: str`
@@ -41,7 +60,7 @@ Ranking combines:
 - evidence strength,
 - mild recency.
 
-The returned evidence includes provenance and relevance. Relevance is a retrieval score, not a calibrated probability that the user will approve the final output.
+Relevance is a retrieval score, not a calibrated probability that the user will approve the final output.
 
 ## `rank_profiles`
 
@@ -55,17 +74,9 @@ Inputs:
 
 Use after candidate outputs have been converted into comparable style fingerprints.
 
-A higher score means "more consistent with retrieved evidence," not "objectively better."
-
 ## `observe_choice`
 
 Strong pairwise text evidence.
-
-Inputs:
-- `preferred: str`
-- `rejected: str`
-- `domain: str = "writing"`
-- `context: str = ""`
 
 Semantics: `preferred > rejected`.
 
@@ -73,25 +84,15 @@ Semantics: `preferred > rejected`.
 
 Strong text evidence from a known rewrite.
 
-Inputs:
-- `original: str`
-- `edited: str`
-- `domain: str = "writing"`
-- `context: str = ""`
-
 Semantics: `edited > original`.
 
 ## `rank_text`
 
-Legacy/interpretable lexical ranking for raw text candidates.
-
-This uses learned lexical feature weights and is complementary to structured style evidence.
+Interpretable lexical ranking for raw text candidates.
 
 ## `taste_profile`
 
 Returns the strongest learned lexical preference weights for a domain.
-
-This is v0.1's interpretable text model, not the complete multimodal profile.
 
 ## `explain_text`
 

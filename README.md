@@ -1,50 +1,158 @@
 # My Taste
 
-**A local-first, user-owned preference layer for AI agents.**
+**A local-first, user-owned contextual preference layer for AI agents.**
 
-My Taste learns what a person would choose from evidence such as pairwise decisions, edits, messages, screenshots, images, audio, and video, then exposes that preference model to AI agents through MCP.
+My Taste learns what a person would choose from explicit evidence, stores reusable style fingerprints with context and provenance, and exposes the result to AI agents through MCP.
 
-The core question is not **"What does the user remember?"** It is:
+The core question is:
 
-> **"Given several possible outputs, which one would this user prefer, in this context, and why?"**
+> **Given this task and everything the user has explicitly liked or rejected before, what should the agent borrow, avoid, or rank higher?**
 
-## Why this exists
-
-Most AI personalization is either a profile, a bag of memories, or hidden recommender-system state owned by a platform. My Taste is intended to be portable infrastructure owned by the user.
-
-The long-term target is a multimodal taste function:
+Long-term objective:
 
 ```text
-T(user, candidate, context, history) -> preference score
+P(candidate_i > candidate_j | user, domain, context, evidence, history)
 ```
 
-Apps and agents should be able to ask My Taste for only the slice they need: writing, design, music, code, video, products, or another domain.
+## What works now
 
-## v0.1: working text preference engine
+My Taste currently has two complementary preference systems.
 
-The first version deliberately starts with a narrow loop that can be tested:
+### 1. Pairwise text learning
 
-1. Observe a choice between preferred and rejected text.
-2. Extract interpretable features from both.
-3. Update a per-domain online preference model.
-4. Rank unseen candidates.
-5. Explain the strongest learned preference contributions.
-6. Persist evidence and weights locally in SQLite.
-7. Expose the loop through MCP tools.
-
-An edit is treated as a strong pairwise signal: **edited text > original text**.
-
-### Preference update
-
-For preferred candidate `x+` and rejected candidate `x-`, My Taste uses an online Bradley-Terry/logistic-style update:
+For explicit text choices and edits:
 
 ```text
-delta = features(x+) - features(x-)
-p     = sigmoid(weights · delta)
-weights <- weights + learning_rate * (1 - p) * delta
+preferred > rejected
+edited > original
 ```
 
-This is intentionally simple and inspectable. Later versions can swap in learned multimodal encoders and richer ranking models without changing the evidence contract.
+The interpretable baseline extracts lexical features and updates an online Bradley-Terry/logistic-style model.
+
+### 2. Contextual artifact taste
+
+For a single liked or disliked reference, an agent can inspect the artifact and save a structured fingerprint:
+
+```text
+TasteEvidence(
+  domain,
+  modality,
+  context,
+  features,
+  preference,
+  strength,
+  provenance
+)
+```
+
+This now supports the workflow for:
+
+- **writing references**
+- **websites and UI screenshots**
+- **videos and editing references**
+- future modalities that can be represented as structured features
+
+The important architectural boundary is deliberate:
+
+```text
+browser / vision / video-capable agent
+          |
+          | inspect reference
+          v
+structured style fingerprint
+          |
+          v
+My Taste
+  - durable evidence
+  - context matching
+  - provenance
+  - positive / negative preferences
+  - profile ranking
+          |
+          v
+future agent task
+```
+
+My Taste does not pretend its SQLite process independently watched a video. The calling agent performs perception; My Taste owns preference memory and retrieval.
+
+## Example: save a website style
+
+An agent inspecting a liked SaaS landing page might store:
+
+```json
+{
+  "domain": "ui_design",
+  "modality": "website",
+  "context": {
+    "surface": "landing_page",
+    "industry": "saas",
+    "goal": "conversion"
+  },
+  "features": {
+    "density": "low",
+    "whitespace": "high",
+    "hierarchy": "strong",
+    "palette": ["neutral-base", "single-accent"],
+    "shadows": "minimal",
+    "motion": "restrained"
+  },
+  "preference": "positive"
+}
+```
+
+Later, when the user asks for another SaaS landing page, the Agent Skill retrieves the most relevant `ui_design` evidence automatically.
+
+## Example: save a writing style
+
+A liked writing sample can be stored without needing a rejected comparison:
+
+```json
+{
+  "domain": "writing",
+  "modality": "text",
+  "context": {
+    "format": "landing_page_copy",
+    "audience": "founder"
+  },
+  "features": {
+    "tone": "direct",
+    "sentence_length": "short-medium",
+    "specificity": "high",
+    "humor": "dry-sparse",
+    "corporate_language": "low"
+  }
+}
+```
+
+Pairwise choices and edits remain stronger signals where available.
+
+## Example: save a video style
+
+A video-capable agent can sample a liked Reel and store:
+
+```json
+{
+  "domain": "video",
+  "modality": "video",
+  "context": {
+    "platform": "instagram",
+    "format": "reel",
+    "goal": "retention"
+  },
+  "features": {
+    "hook": "immediate-visual",
+    "pacing": "fast",
+    "cuts_per_minute": 18,
+    "camera_motion": "restrained",
+    "transitions": "mostly-hard-cuts",
+    "caption_density": "low",
+    "music_energy": "medium-high",
+    "ending": "hard-stop"
+  }
+}
+```
+
+Future Reel tasks can retrieve this. A long documentary task should not blindly inherit it because context is part of the evidence.
 
 ## Install
 
@@ -52,31 +160,46 @@ This is intentionally simple and inspectable. Later versions can swap in learned
 pip install -e ".[dev]"
 ```
 
-The MCP dependency targets the current MCP Python SDK v2 line.
+The default database is `~/.my_taste/taste.db`.
 
-## Quick start
-
-```bash
-my-taste observe-choice \
-  --preferred "Your website should make the offer obvious in five seconds." \
-  --rejected "Transform your digital presence with next-generation solutions."
-
-my-taste profile
-
-my-taste rank \
-  "Build something people can understand immediately." \
-  "Leverage innovative solutions to unlock digital transformation."
-```
-
-The default database is `~/.my_taste/taste.db`. Override it with:
+Override it with:
 
 ```bash
 export MY_TASTE_DB=/path/to/taste.db
 ```
 
+## CLI
+
+Text pairwise learning:
+
+```bash
+my-taste observe-choice \
+  --preferred "Your website should make the offer obvious in five seconds." \
+  --rejected "Transform your digital presence with next-generation solutions."
+```
+
+Save a structured artifact fingerprint:
+
+```bash
+my-taste observe-artifact \
+  --domain ui_design \
+  --modality website \
+  --context-json '{"surface":"landing_page","industry":"saas"}' \
+  --features-json '{"density":"low","whitespace":"high","shadows":"minimal"}'
+```
+
+Retrieve context-relevant evidence:
+
+```bash
+my-taste retrieve \
+  --domain ui_design \
+  --modality website \
+  --context-json '{"surface":"landing_page","industry":"saas"}'
+```
+
 ## MCP
 
-Run the server:
+Run locally over stdio:
 
 ```bash
 my-taste-mcp
@@ -88,94 +211,120 @@ or during development:
 mcp dev src/my_taste/mcp_server.py
 ```
 
-For a ChatGPT-compatible Streamable HTTP endpoint:
+For Streamable HTTP:
 
 ```bash
 MY_TASTE_MCP_TRANSPORT=streamable-http my-taste-mcp
 ```
 
-This serves MCP at `http://127.0.0.1:8000/mcp` by default. Override the bind address and port with `MY_TASTE_MCP_HOST` and `MY_TASTE_MCP_PORT`.
+Default endpoint:
 
-The default remains stdio so local-first behavior does not silently become a network service.
+```text
+http://127.0.0.1:8000/mcp
+```
 
-Initial MCP tools:
+### MCP tools
 
 - `observe_choice`
 - `observe_edit`
+- `observe_artifact`
+- `retrieve_taste`
+- `rank_profiles`
 - `rank_text`
 - `taste_profile`
 - `explain_text`
 
 ## Agent Skill
 
-The repository now includes an Agent Skills-compatible workflow at:
+The repository includes an Agent Skills-compatible package:
 
 ```text
 skills/my-taste/
 ├── SKILL.md
 └── references/
-    └── tool-contract.md
+    ├── tool-contract.md
+    └── style-fingerprints.md
 ```
 
-The skill is deliberately thin: it teaches an agent when to read, rank, explain, or update learned preferences while the MCP server remains the live preference engine. This prevents a static prompt from becoming a second, stale source of truth.
+The skill teaches agents to:
 
-Build the uploadable skill bundle with:
+- recognize explicit "I like this / save this style" signals,
+- inspect websites, text, screenshots, and videos using available perception tools,
+- store compact reusable fingerprints,
+- retrieve relevant taste automatically for normal future creative tasks,
+- avoid applying unrelated evidence across domains or contexts,
+- rank structured candidates against positive and negative evidence.
+
+Build the uploadable bundle:
 
 ```bash
 python scripts/package_skill.py
 ```
 
-The output is `dist/my-taste-skill.zip`, containing one top-level `my-taste/` folder as required by Agent Skills upload flows.
+Output:
 
-Key behavior:
-
-- explicit user requirements and correctness come before taste optimization,
-- persisted taste is read through My Taste tools rather than invented from generic memory,
-- learning occurs only from explicit preference evidence,
-- writing preferences are not silently generalized into unrelated domains,
-- unsupported or weakly evidenced preferences remain uncertain.
+```text
+dist/my-taste-skill.zip
+```
 
 ## Architecture
 
 ```text
-Evidence
-  |
-  +-- text choices / edits        (implemented)
-  +-- screenshots / images       (adapter contract)
-  +-- audio / video              (adapter contract)
-  +-- behavioral events          (adapter contract)
-  |
-  v
-Feature extraction / embeddings
-  |
-  v
-Preference engine
-  |
-  +-- local evidence store
-  +-- domain-scoped weights
-  +-- ranking + explanation
-  |
-  v
-MCP / CLI / Agent Skill / future SDKs
+Explicit preference
+      |
+      +-- pairwise text choice / edit
+      |
+      +-- liked/disliked artifact
+              |
+              v
+       agent perception
+              |
+              v
+     structured fingerprint
+              |
+              v
+      SQLite evidence store
+              |
+       context retrieval
+              |
+      +-------+--------+
+      |                |
+  rank raw text   rank profiles
+      |                |
+      +-------+--------+
+              v
+        MCP + Skill
+              |
+              v
+        future agents
 ```
 
 ## Design principles
 
-- **Local first**: raw personal evidence should not need a cloud service.
-- **User owned**: export and deletion should be boring and complete.
-- **Evidence backed**: every learned preference should be traceable to observations.
-- **Contextual**: writing taste should not silently become music taste.
-- **Uncertain by default**: weak evidence should remain weak evidence.
-- **Replaceable models**: storage and protocol should survive model upgrades.
-- **Scoped access**: future agents should request only the preference domains they need.
+- **Local first**: private raw evidence should not require a cloud service.
+- **User owned**: storage and exports should remain portable.
+- **Evidence backed**: learned preferences retain provenance.
+- **Contextual**: landing-page taste is not automatically dashboard taste.
+- **Multimodal without lock-in**: perception adapters can change while the evidence contract survives.
+- **Uncertain by default**: weak evidence stays weak.
+- **Scoped access**: agents should retrieve only the taste domain they need.
+- **Copyright-conscious**: store reusable abstractions rather than unnecessary copies of source material.
+
+## Current limits
+
+This is not yet a fully local computer-vision/video-analysis stack.
+
+For websites, screenshots, and videos, the current production path is:
+
+```text
+capable agent inspects -> My Taste stores/retrieves
+```
+
+Direct local frame extraction, scene segmentation, audio analysis, perceptual hashing, embeddings, contradiction handling, and calibrated TasteBench evaluation remain work in progress.
 
 ## Roadmap
 
 See [`ROADMAP.md`](ROADMAP.md).
-
-## Status
-
-Experimental. v0.1 is a real baseline, not a claim that human taste can be compressed into eight lexical features without embarrassing consequences.
 
 ## License
 

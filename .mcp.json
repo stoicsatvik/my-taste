@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "my-taste": {
+      "type": "stdio",
+      "command": "python3",
+      "args": ["./scripts/plugin_mcp_entry.py"],
+      "cwd": ".",
+      "startup_timeout_sec": 120,
+      "tool_timeout_sec": 60
+    }
+  }
+}

@@ -154,6 +154,21 @@ A video-capable agent can sample a liked Reel and store:
 
 Future Reel tasks can retrieve this. A long documentary task should not blindly inherit it because context is part of the evidence.
 
+## Capture fidelity
+
+My Taste v0.3 distinguishes what can actually be observed instead of pretending every reference has the same information content.
+
+| Reference | What can be captured |
+| --- | --- |
+| Static screenshot | exact raster dimensions, deterministic pixel palette/statistics when a local path is available, geometry, typography, spacing, component grammar, hierarchy, composition |
+| Multiple UI screenshots | static evidence plus state differences and breakpoint/state comparison |
+| Live public website | rendered pixel evidence, DOM geometry, computed styles, CSS variables, media queries, fonts, and observable Web Animations timing/keyframes |
+| Video / screen recording | timeline-aware semantic analysis: shot rhythm, transitions, captions, camera behavior, audio/retention structure when the host can inspect the media |
+
+A still image cannot prove hover states, scroll choreography, easing, animation timing, or responsive layouts outside the shown viewport. Those fields are marked unobserved rather than guessed.
+
+For a live website, the `analyze_website` MCP tool uses an installed Chrome/Chromium browser and combines rendered pixels with DOM/CSS/motion evidence. For a local screenshot, `analyze_image_file` adds deterministic raster evidence to the host model's semantic analysis.
+
 ## One-line Codex install
 
 In Codex with Full access, run:
@@ -170,6 +185,25 @@ This repository is itself a Codex Git marketplace. Its single `my-taste` plugin 
 - persistent preference data at `~/.my_taste/taste.db`.
 
 The first MCP launch installs Python dependencies into `~/.my_taste/codex-runtime`; protocol output remains clean because setup logs are sent to stderr. Start a new Codex chat after installation so the plugin and skill are loaded.
+
+## Claude Code
+
+The same repository is also a native Claude Code plugin marketplace. It includes `.claude-plugin/plugin.json`, a Claude marketplace manifest, the same skill, and the same local MCP launcher.
+
+Inside Claude Code:
+
+```text
+/plugin marketplace add stoicsatvik/my-taste
+/plugin install my-taste@my-taste
+```
+
+Start a new Claude Code session after installation. Both Codex and Claude Code intentionally use the same local preference database:
+
+```text
+~/.my_taste/taste.db
+```
+
+So a reference saved from one client can inform the other when both run on the same machine.
 
 ## Try it with ChatGPT
 

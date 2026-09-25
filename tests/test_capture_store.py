@@ -109,3 +109,29 @@ def test_raw_capture_is_compressed_and_round_trips(tmp_path):
     assert meta["stored"] is True
     assert meta["compressed_bytes"] < meta["raw_bytes"]
     assert load_raw_capture(db_path, "evidence-1") == raw
+
+
+def test_compaction_materially_reduces_large_browser_capture():
+    raw = _sample_capture()
+    base_element = raw["initial_state"]["elements"][0]
+    raw["initial_state"]["elements"] = [
+        {
+            **base_element,
+            "text": "Long visible text that should not be repeated into model context " * 8,
+            "geometry": {
+                **base_element["geometry"],
+                "y_px": index * 48,
+                "y_vh": index * 0.048,
+            },
+        }
+        for index in range(120)
+    ]
+    raw["scrolled_state"]["elements"] = raw["initial_state"]["elements"]
+
+    import json
+
+    raw_bytes = len(json.dumps(raw, separators=(",", ":")).encode("utf-8"))
+    compact = compact_website_capture(raw)
+    compact_bytes = len(json.dumps(compact, separators=(",", ":")).encode("utf-8"))
+
+    assert compact_bytes < raw_bytes * 0.25

@@ -2,6 +2,8 @@
 
 When the user says to save, learn, copy, remember, or analyze a visual/video style, default to **deep capture**, not a seven-bullet vibe summary.
 
+Deep does **not** mean verbose model context. Capture richly, compress server-side, and return only the minimum receipt needed to continue.
+
 The goal is to preserve enough evidence that a future agent can reproduce the design grammar without copying protected assets or pretending to have observed unavailable states.
 
 ## Fidelity levels
@@ -214,3 +216,22 @@ A future task should retrieve the context-specific taste brief, then use individ
 Borrow **design grammar**, not protected logos, illustrations, copy, or exact page composition.
 
 When evidence came from a static screenshot, do not invent matching animation behavior merely because the visual style matches.
+
+
+## Context-cost rule
+
+For live website references, the preferred path is:
+
+```text
+save_website_reference
+  -> browser/DOM/CSS/motion capture inside MCP process
+  -> compact forensic fingerprint in SQLite
+  -> full raw capture gzip sidecar on local disk
+  -> tiny receipt back to the model
+```
+
+Do not send the full element/style/animation dump to the model and then ask it to compress the dump. That spends tokens without improving the stored evidence.
+
+For screenshot references, prefer `save_image_reference` when a local path exists. Add only a compact semantic feature object from host vision.
+
+Ordinary future generation should use compact `taste_brief`, usually 4-6 rules. Retrieve raw evidence only for provenance or exact forensic follow-up.

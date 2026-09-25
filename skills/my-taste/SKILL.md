@@ -15,7 +15,8 @@ The Skill decides **when to observe, retrieve, rank, and apply**. The MCP server
 
 Read:
 - `references/tool-contract.md` for tool semantics.
-- `references/style-fingerprints.md` before extracting website/UI, writing-style, or video fingerprints.
+- `references/style-fingerprints.md` for compact fingerprints.
+- `references/deep-capture.md` whenever the user asks to save, learn, copy, remember, or deeply analyze a screenshot, website, UI, or video style.
 
 ## Core rules
 
@@ -93,18 +94,20 @@ When the user says things like:
 follow this workflow:
 
 1. **Inspect the actual reference** using the available browser, image, file, or video capabilities.
-2. **Separate content from style.**
-   Extract reusable choices, not topic-specific facts.
-3. **Build a structured fingerprint** using `references/style-fingerprints.md`.
-4. **Infer context** from the artifact and user's instruction.
-5. Call `observe_artifact` with:
+2. **Use deep capture by default.** Read `references/deep-capture.md`. A short aesthetic summary is not enough when the user says to save the reference.
+3. If the reference is a local screenshot/image and a readable local path is available, call `analyze_image_file` first for deterministic pixel evidence, then combine it with semantic visual analysis.
+4. **Separate content from style.** Extract reusable choices, not topic-specific facts.
+5. **Record observability honestly.** A static screenshot cannot prove animations, hover states, scroll effects, responsive behavior outside the shown viewport, or interaction timing.
+6. **Build a nested structured fingerprint** using the deep-capture schema.
+7. **Infer context** from the artifact and user's instruction.
+8. Call `observe_artifact` with:
    - domain,
    - modality,
    - fingerprint features,
    - compact context,
    - `positive` or `negative`,
    - source reference when useful.
-6. Confirm what category of taste was saved without dumping every feature unless the user asks.
+9. Confirm what category and fidelity of taste was saved without dumping the full forensic fingerprint unless the user asks.
 
 If the artifact cannot actually be inspected, do not fabricate a fingerprint. State that the reference was not analyzable and avoid saving invented evidence.
 
@@ -112,11 +115,12 @@ If the artifact cannot actually be inspected, do not fabricate a fingerprint. St
 
 When a website or UI is explicitly liked/disliked:
 
-1. Inspect representative states/sections, not only the hero when more of the interface is available.
-2. Extract layout, hierarchy, density, typography, spacing, palette behavior, borders/radius, shadows, imagery, motion, navigation, component style, information density, and interaction character.
-3. Save under `domain="ui_design"`.
-4. Use `modality="website"` for live pages and `modality="screenshot"` for static captures.
-5. Include context such as surface, product type, industry, device, and goal when inferable.
+1. For a static screenshot, capture pixel evidence, geometry, typography, surface system, components, composition, and distinctive signatures at the highest observable precision.
+2. For a live URL, inspect representative sections and states, not only the hero. When possible inspect DOM/computed CSS, breakpoints, hover/focus states, scroll behavior, transitions, animation durations/easing/delays, and layout geometry.
+3. Never infer motion from a still image. If motion matters and only a screenshot is available, save the static design faithfully and mark motion as unobserved.
+4. Save under `domain="ui_design"`.
+5. Use `modality="website"` for live pages and `modality="screenshot"` for static captures.
+6. Include context such as surface, product type, industry, device, goal, and capture fidelity when inferable.
 
 Do not save the site's brand identity or exact copyrighted assets as if they were reusable style rules. Capture the design grammar.
 
@@ -136,8 +140,9 @@ Pairwise choices and edits should still use `observe_choice` / `observe_edit` be
 
 When the user likes/dislikes a video:
 
-1. Inspect as much of the actual video as available.
-2. Separate:
+1. Inspect as much of the actual video as available and sample multiple points across the timeline.
+2. Read `references/deep-capture.md` and capture measurable timing/shot/transition evidence when the host can observe it.
+3. Separate:
    - narrative structure,
    - editing rhythm,
    - visual composition,

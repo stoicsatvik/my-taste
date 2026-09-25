@@ -18,7 +18,7 @@ jobs:
       - name: Test
         run: python -m pytest -q
       - name: Compile bootstrap and runtime
-        run: python -m py_compile bootstrap.py src/my_taste/connect.py src/my_taste/mcp_server.py
+        run: python -m py_compile bootstrap.py scripts/plugin_mcp_entry.py src/my_taste/connect.py src/my_taste/mcp_server.py
       - name: Build skill package
         run: python scripts/package_skill.py
       - name: Build plugin package
@@ -35,6 +35,24 @@ jobs:
           plugin = json.loads(Path("plugin.json").read_text())
           assert plugin["name"] == "my-taste"
           assert plugin["version"] == "0.2.0"
+
+          codex_plugin = json.loads(Path(".codex-plugin/plugin.json").read_text())
+          assert codex_plugin["name"] == "my-taste"
+          assert codex_plugin["skills"] == "./skills/"
+          assert codex_plugin["mcpServers"] == "./.mcp.json"
+
+          mcp = json.loads(Path(".mcp.json").read_text())
+          server = mcp["mcpServers"]["my-taste"]
+          assert server["type"] == "stdio"
+          assert server["command"] == "python3"
+          assert server["args"] == ["./scripts/plugin_mcp_entry.py"]
+
+          marketplace = json.loads(Path(".agents/plugins/marketplace.json").read_text())
+          assert marketplace["name"] == "my-taste"
+          entry = marketplace["plugins"][0]
+          assert entry["name"] == "my-taste"
+          assert entry["source"]["path"] == "./"
+          assert entry["policy"]["installation"] == "INSTALLED_BY_DEFAULT"
 
           with zipfile.ZipFile("dist/my-taste-skill.zip") as z:
               names = set(z.namelist())

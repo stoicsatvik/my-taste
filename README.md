@@ -154,6 +154,49 @@ A video-capable agent can sample a liked Reel and store:
 
 Future Reel tasks can retrieve this. A long documentary task should not blindly inherit it because context is part of the evidence.
 
+## Try it with ChatGPT
+
+For a temporary local-first test, install/update My Taste from this repository, start the MCP server, and expose it through a verified Cloudflare Quick Tunnel with one command:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/stoicsatvik/my-taste/main/bootstrap.py | python3
+```
+
+The bootstrap:
+
+1. creates an isolated runtime under `~/.my_taste/runtime`,
+2. installs the current GitHub source archive,
+3. keeps preference data in `~/.my_taste/taste.db`,
+4. downloads `cloudflared` from the official Cloudflare GitHub release only when needed and verifies its SHA-256 checksum,
+5. starts My Taste over Streamable HTTP,
+6. prints a temporary public `https://...trycloudflare.com/mcp` URL.
+
+Keep that terminal open during the test.
+
+Then in ChatGPT, enable Developer mode, create a personal MCP plugin using the printed `/mcp` URL, and use it in a chat. ChatGPT currently connects personal MCP plugins by endpoint URL rather than directly installing a GitHub repository URL.
+
+### Screenshot -> saved UI taste -> landing page
+
+1. Attach a screenshot and say:
+
+   `I like this website UI. Analyze its visual grammar and save it to My Taste.`
+
+2. The host model should inspect the screenshot and call `observe_artifact` with `domain="ui_design"`, `modality="screenshot"`, context tags, and derived visual features.
+
+3. In a later taste-sensitive request, say:
+
+   `Create a SaaS landing page for an AI operations product.`
+
+4. My Taste should call `taste_brief` for the inferred landing-page context before the design is finalized. Relevant saved positive features should be applied, negative features avoided, and unrelated dashboard/video/writing evidence should not leak in.
+
+### Video reference -> later video task
+
+Attach a video or otherwise provide a video the host can actually inspect, then say:
+
+`I like this editing style. Save it to My Taste.`
+
+The host should sample multiple moments when available and save a video fingerprint covering pacing, hooks, cuts, captions, camera behavior, transitions, color/lighting, audio behavior, retention mechanics, and ending style. A later matching Reel/Short task should retrieve that video taste automatically through `taste_brief`.
+
 ## Install
 
 ```bash
@@ -229,6 +272,7 @@ http://127.0.0.1:8000/mcp
 - `observe_edit`
 - `observe_artifact`
 - `retrieve_taste`
+- `taste_brief`
 - `rank_profiles`
 - `rank_text`
 - `taste_profile`
@@ -255,17 +299,26 @@ The skill teaches agents to:
 - avoid applying unrelated evidence across domains or contexts,
 - rank structured candidates against positive and negative evidence.
 
-Build the uploadable bundle:
+Build the uploadable skill bundle:
 
 ```bash
 python scripts/package_skill.py
 ```
 
-Output:
+Build the portable Agent Plugin package:
+
+```bash
+python scripts/package_plugin.py
+```
+
+Outputs:
 
 ```text
 dist/my-taste-skill.zip
+dist/my-taste-plugin.zip
 ```
+
+The repository root also contains `plugin.json`, the portable Agent Plugins manifest. The temporary ChatGPT MCP test still requires registering the printed HTTPS endpoint because the tunnel URL is created at runtime.
 
 ## Architecture
 

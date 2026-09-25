@@ -6,9 +6,20 @@ from pathlib import Path
 
 INCLUDE_ROOT_FILES = {
     "plugin.json",
+    "mcp.json",
+    ".mcp.json",
+    "pyproject.toml",
     "README.md",
     "LICENSE",
 }
+
+INCLUDE_TREES = (
+    "skills",
+    "src",
+    "scripts",
+    ".codex-plugin",
+    ".claude-plugin",
+)
 
 
 def main() -> None:
@@ -23,11 +34,15 @@ def main() -> None:
         if path.exists():
             paths.append(path)
 
-    skill_root = repo_root / "skills"
-    paths.extend(path for path in skill_root.rglob("*") if path.is_file())
+    for tree in INCLUDE_TREES:
+        root = repo_root / tree
+        if root.exists():
+            paths.extend(path for path in root.rglob("*") if path.is_file())
 
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-        for path in sorted(paths):
+        for path in sorted(set(paths)):
+            if "__pycache__" in path.parts or path.suffix == ".pyc":
+                continue
             archive.write(path, path.relative_to(repo_root))
 
     print(output)

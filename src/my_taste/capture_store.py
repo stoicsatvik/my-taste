@@ -319,6 +319,19 @@ def compact_receipt(
     typography = fingerprint.get("typography") if isinstance(fingerprint.get("typography"), dict) else {}
     pixels = fingerprint.get("pixels") if isinstance(fingerprint.get("pixels"), dict) else {}
 
+    fingerprint_bytes = len(
+        json.dumps(
+            fingerprint,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    )
+    raw_bytes = int((raw_meta or {}).get("raw_bytes") or 0)
+    reduction = None
+    if raw_bytes > 0:
+        reduction = round(max(0.0, 1.0 - fingerprint_bytes / raw_bytes), 4)
+
     return {
         "fidelity": "deep_compact",
         "sampled_elements": structure.get("sampled_element_count", 0),
@@ -333,5 +346,7 @@ def compact_receipt(
             for row in (pixels.get("dominant_colors") or [])[:5]
             if isinstance(row, dict)
         ],
+        "fingerprint_bytes": fingerprint_bytes,
+        "raw_to_fingerprint_reduction": reduction,
         "raw_capture": raw_meta or {"stored": False},
     }

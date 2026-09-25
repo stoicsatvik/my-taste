@@ -180,7 +180,7 @@ For later creative work, `taste_brief` is compact by default and normally return
 
 ## Capture fidelity
 
-My Taste v0.4 distinguishes what can actually be observed instead of pretending every reference has the same information content.
+My Taste v0.5 distinguishes what can actually be observed instead of pretending every reference has the same information content.
 
 | Reference | What can be captured |
 | --- | --- |
@@ -192,6 +192,38 @@ My Taste v0.4 distinguishes what can actually be observed instead of pretending 
 A still image cannot prove hover states, scroll choreography, easing, animation timing, or responsive layouts outside the shown viewport. Those fields are marked unobserved rather than guessed.
 
 For a live website **save**, use `save_website_reference`; it captures rendered pixels plus DOM/CSS/motion evidence without returning the giant raw dump. `analyze_website` exists for explicit forensic inspection and returns a compact fingerprint. For a local screenshot save, use `save_image_reference`.
+
+## Automatic updates
+
+My Taste v0.5 is designed to be install-once for personal Codex/Claude Code use.
+
+Two independent update layers keep it current:
+
+1. **Runtime auto-update** — when the MCP server starts, the launcher checks `stoicsatvik/my-taste@main` at most once every 15 minutes. If the commit changed, it installs that exact commit into `~/.my_taste/runtime`. If the network or update fails, the last working runtime starts instead.
+2. **Codex marketplace refresh** — the bundled `SessionStart` hook launches `codex plugin marketplace upgrade my-taste` in the background at most once every six hours. This refreshes cached plugin/Skill/manifest files for a later session.
+
+The Codex hook requires the normal one-time hook trust/review that Codex applies to non-managed plugin hooks. Runtime auto-update does not depend on that hook.
+
+Both Codex and Claude Code share:
+
+```text
+~/.my_taste/taste.db
+~/.my_taste/runtime/
+```
+
+Opt out when needed:
+
+```bash
+export MY_TASTE_AUTO_UPDATE=0
+export MY_TASTE_MARKETPLACE_AUTO_UPDATE=0
+```
+
+Tune the checks:
+
+```bash
+export MY_TASTE_UPDATE_INTERVAL_SECONDS=900
+export MY_TASTE_MARKETPLACE_UPDATE_INTERVAL_SECONDS=21600
+```
 
 ## One-line Codex install
 

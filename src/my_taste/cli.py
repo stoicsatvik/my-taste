@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 from dataclasses import asdict
+from pathlib import Path
 
 from .config import default_db_path
 from .core.engine import TasteEngine
@@ -10,6 +11,24 @@ from .core.engine import TasteEngine
 
 def _print(value: object) -> None:
     print(json.dumps(value, indent=2, ensure_ascii=False, default=str))
+
+
+def _json_object(value: str) -> dict[str, object]:
+    path = Path(value)
+    raw = path.read_text(encoding="utf-8") if path.exists() else value
+    parsed = json.loads(raw)
+    if not isinstance(parsed, dict):
+        raise argparse.ArgumentTypeError("expected a JSON object or path to a JSON object")
+    return parsed
+
+
+def _json_list(value: str) -> list[object]:
+    path = Path(value)
+    raw = path.read_text(encoding="utf-8") if path.exists() else value
+    parsed = json.loads(raw)
+    if not isinstance(parsed, list):
+        raise argparse.ArgumentTypeError("expected a JSON array or path to a JSON array")
+    return parsed
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -29,15 +48,37 @@ def build_parser() -> argparse.ArgumentParser:
     edit.add_argument("--domain", default="writing")
     edit.add_argument("--context", default="")
 
+    artifact = sub.add_parser("observe-artifact", help="Save a structured liked/disliked artifact fingerprint")
+    artifact.add_argument("--domain", required=True)
+    artifact.add_argument("--modality", required=True)
+    artifact.add_argument("--features-json", required=True, type=_json_object)
+    artifact.add_argument("--context-json", default={}, type=_json_object)
+    artifact.add_argument("--preference", choices=["positive", "negative"], default="positive")
+    artifact.add_argument("--strength", type=float, default=1.0)
+    artifact.add_argument("--source-reference", default="")
+    artifact.add_argument("--note", default="")
+
+    retrieve = sub.add_parser("retrieve", help="Retrieve contextual taste evidence")
+    retrieve.add_argument("--domain", required=True)
+    retrieve.add_argument("--modality", default="")
+    retrieve.add_argument("--context-json", default={}, type=_json_object)
+    retrieve.add_argument("--limit", type=int, default=8)
+
+    profile_rank = sub.add_parser("rank-profiles", help="Rank structured candidate fingerprints")
+    profile_rank.add_argument("--domain", required=True)
+    profile_rank.add_argument("--modality", default="")
+    profile_rank.add_argument("--context-json", default={}, type=_json_object)
+    profile_rank.add_argument("--candidates-json", required=True, type=_json_list)
+
     rank = sub.add_parser("rank", help="Rank candidate strings")
     rank.add_argument("candidates", nargs="+")
     rank.add_argument("--domain", default="writing")
 
-    profile = sub.add_parser("profile", help="Show learned taste profile")
+    profile = sub.add_parser("profile", help="Show learned lexical taste profile")
     profile.add_argument("--domain", default="writing")
     profile.add_argument("--limit", type=int, default=20)
 
-    explain = sub.add_parser("explain", help="Explain one candidate")
+    explain = sub.add_parser("explain", help="Explain one text candidate")
     explain.add_argument("text")
     explain.add_argument("--domain", default="writing")
 
@@ -52,6 +93,39 @@ def main() -> None:
         _print(engine.observe_choice(args.preferred, args.rejected, domain=args.domain, context=args.context))
     elif args.command == "observe-edit":
         _print(engine.observe_edit(args.original, args.edited, domain=args.domain, context=args.context))
+    elif args.command == "observe-artifact":
+        _print(
+            engine.observe_artifact(
+                domain=args.domain,
+                modality=args.modality,
+                features=args.features_json,
+                context={str(k): str(v) for k, v in args.context_json.items()},
+                preference=args.preference,
+                strength=args.strength,
+                source="cli",
+                source_reference=args.source_reference,
+                note=args.note,
+            )
+        )
+    elif args.command == "retrieve":
+        _print(
+            engine.retrieve_taste(
+                domain=args.domain,
+                modality=args.modality,
+                context={str(k): str(v) for k, v in args.context_json.items()},
+                limit=args.limit,
+            )
+        )
+    elif args.command == "rank-profiles":
+        candidates = [item for item in args.candidates_json if isinstance(item, dict)]
+        _print(
+            engine.rank_profiles(
+                candidates,
+                domain=args.domain,
+                modality=args.modality,
+                context={str(k): str(v) for k, v in args.context_json.items()},
+            )
+        )
     elif args.command == "rank":
         _print([asdict(item) for item in engine.rank_text(args.candidates, domain=args.domain)])
     elif args.command == "profile":

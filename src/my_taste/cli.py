@@ -37,6 +37,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--db", default=str(default_db_path()), help="SQLite database path")
     sub = parser.add_subparsers(dest="command", required=True)
 
+    sub.add_parser("install", help="Detect installed coding agents and configure My Taste automatically")
+
     connect = sub.add_parser(
         "connect",
         help="Start My Taste and expose a temporary HTTPS MCP URL for ChatGPT testing",
@@ -105,6 +107,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main() -> None:
     args = build_parser().parse_args()
+
+    if args.command == "install":
+        from .agent_install import install_detected
+        _print([asdict(item) for item in install_detected()])
+        return
 
     if args.command == "connect":
         run_chatgpt_connection(

@@ -485,3 +485,42 @@ See [`ROADMAP.md`](ROADMAP.md).
 ## License
 
 MIT
+
+## Automatic activation in Claude Code (experimental)
+
+This plugin now ships `hooks/taste_prompt.py` and registers it using the
+Claude Code `UserPromptSubmit` event. This is a *local, heuristic activation
+layer*, not a background daemon or a guarantee that the model will obey.
+
+- Explicit preference statements (for example, "I hate corporate copy") remind
+  Claude to capture evidence using the existing My Taste MCP tools.
+- Creative tasks (for example, "Design a landing page") remind Claude to call
+  `taste_brief` first.
+- Unrelated technical work is normally ignored.
+- Mere use of an output is **not** treated as implicit approval.
+- The hook neither stores private preferences nor sends prompt contents over
+  the network. The existing local SQLite database remains the storage layer.
+
+For a marketplace install in Claude Code:
+
+```text
+/plugin marketplace add stoicsatvik/my-taste
+/plugin install my-taste@my-taste
+```
+
+Restart Claude Code after installation. If your Claude Code version reports that
+this is not a marketplace, clone the repo and run
+`claude plugin validate .` and inspect the returned schema error. The repository
+contains `.claude-plugin/marketplace.json` and
+`.claude-plugin/plugin.json`; an error from a specific client/version still
+needs reproducing before it can be called fixed.
+
+**Smoke test** (with the MCP plugin successfully installed): say
+"I hate generic corporate copy. Remember that for future landing pages."
+Then restart and request "Write landing page copy for a cafe." Confirm the
+preference was stored and that a task-scoped taste brief was used. Run
+`python -m pytest tests/test_taste_prompt_hook.py` from a development checkout
+to test the local routing logic.
+
+The Claude Code hook is client-specific. Codex automatic invocation continues
+to depend on its own plugin and skill discovery mechanism.

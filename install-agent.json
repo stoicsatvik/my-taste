@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "name": "my-taste",
+  "install_intent": "Install My Taste for this coding agent with no user configuration.",
+  "repository": "https://github.com/stoicsatvik/my-taste",
+  "rules": [
+    "Prefer this host's native plugin or skill mechanism when available.",
+    "Use the bundled MCP server as the interoperability layer.",
+    "Preserve existing host configuration; merge My Taste instead of replacing files.",
+    "Do not ask the user to configure storage, databases, Python environments, or MCP JSON manually.",
+    "After installation, verify My Taste tools are visible and report only success or the single actionable blocker."
+  ],
+  "entrypoints": {
+    "agent_plugin": "plugin.json",
+    "mcp": ".mcp.json",
+    "claude_code": ".claude-plugin/plugin.json",
+    "codex": ".codex-plugin/plugin.json",
+    "skill": "skills/my-taste/SKILL.md"
+  }
+}

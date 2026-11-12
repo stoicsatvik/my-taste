@@ -26,3 +26,12 @@ No API key, account token, paid API, or model invocation is configured. Automati
 ## Next gate
 
 If the CLI validator passes, run a user-approved client smoke test with a temporary profile and no persistent credentials. If it fails, preserve the exact CLI diagnostic and fix only the failing manifest contract.
+
+
+## Exact-head result
+
+Actions run [#43177453225](https://github.com/stoicsatvik/my-taste/actions/runs/43177453225) passed on 2026-11-12 with Claude Code CLI **2.1.322**. The CLI validated `.claude-plugin/marketplace.json` and returned **Validation passed**.
+
+One non-blocking warning remains: the plugin has no icon. The validator recommends a 512–2048 px square PNG/JPEG under 2 MB. No asset was fabricated. The CLI explicitly says this command does not run the developer-portal safety scan or policy review.
+
+The existing repository tests/package workflow also passed on the same head (Actions #43177453383). This supports manifest/package validity for the tested CLI version; it does not establish authenticated live Claude behavior, live Codex behavior, or remote MCP interoperability.

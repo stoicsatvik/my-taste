@@ -158,3 +158,10 @@ Validate the new contextual evidence layer end-to-end through ChatGPT/MCP, then 
 - Validator notes that its command does not run the developer-portal safety scan or policy review. No compliance/policy approval is claimed.
 - Claim state: Claude Code CLI manifest/package validation SUPPORTED on v2.1.322; authenticated live Claude client behavior NOT YET MEASURED; live Codex client behavior NOT YET MEASURED; MCP remote interoperability NOT YET PROVEN.
 - Next: only a user-approved temporary-profile client smoke test can close the live-client gap; no persistent credentials are configured by this workflow.
+
+
+## Final documentation-head revalidation — 12 November 2026
+
+- Final PR #13 head `23679177bea4651a0b228f65772780ae20d3003c` also passed the existing tests workflow #43177615646 and Claude Code CLI validation workflow #43177615751.
+- CLI remains pinned to v2.1.322; `claude plugin validate . --strict` passed on the final PR head. The missing-icon warning remains non-blocking.
+- Live authenticated Claude/Codex client behavior and remote MCP interoperability remain NOT YET MEASURED / NOT YET PROVEN.

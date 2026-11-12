@@ -1,0 +1,49 @@
+name: Claude Code plugin CLI validation
+
+on:
+  push:
+    branches:
+      - foundry/claude-plugin-cli-validation-20261112
+    paths:
+      - .claude-plugin/**
+      - .codex-plugin/**
+      - hooks/**
+      - scripts/package_plugin.py
+      - skills/**
+      - .github/workflows/claude-plugin-cli-validation.yml
+  pull_request:
+    paths:
+      - .claude-plugin/**
+      - .codex-plugin/**
+      - hooks/**
+      - scripts/package_plugin.py
+      - skills/**
+      - .github/workflows/claude-plugin-cli-validation.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: my-taste-claude-plugin-cli-validation
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      CI: "true"
+      DISABLE_AUTOUPDATER: "1"
+      CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install pinned official Claude Code CLI
+        run: npm install --global @anthropic-ai/claude-code@2.1.322
+      - name: Verify CLI version
+        run: claude --version
+      - name: Validate plugin manifest and package
+        run: timeout 180s claude plugin validate . --strict

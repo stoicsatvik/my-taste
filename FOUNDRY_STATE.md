@@ -146,3 +146,22 @@ Metrics:
 ## Next best move
 
 Validate the new contextual evidence layer end-to-end through ChatGPT/MCP, then add direct video/UI perception adapters behind the same evidence contract.
+
+
+## Claude Code CLI package validation — 12 November 2026
+
+- Draft PR #13, branch `foundry/claude-plugin-cli-validation-20261112`, base `main`; exact head `fe451b2a8eab9e5d28861c1c18f70ec87653691b`.
+- Official Claude Code CLI pinned to v2.1.322; Actions run #43177453225 passed. The existing repository test/package workflow also passed on the same head (#43177453383).
+- Executed `claude plugin validate . --strict` with no API key, account token, model invocation or paid API configured; auto-updates and nonessential CLI traffic were disabled.
+- Validator explicitly validated `.claude-plugin/marketplace.json` and returned **Validation passed**.
+- Non-blocking warning: `.claude-plugin/plugin.json` has no icon. Validator says a 512–2048 px square PNG/JPEG under 2 MB would remove the warning. No image asset was fabricated.
+- Validator notes that its command does not run the developer-portal safety scan or policy review. No compliance/policy approval is claimed.
+- Claim state: Claude Code CLI manifest/package validation SUPPORTED on v2.1.322; authenticated live Claude client behavior NOT YET MEASURED; live Codex client behavior NOT YET MEASURED; MCP remote interoperability NOT YET PROVEN.
+- Next: only a user-approved temporary-profile client smoke test can close the live-client gap; no persistent credentials are configured by this workflow.
+
+
+## Final documentation-head revalidation — 12 November 2026
+
+- Final PR #13 head `23679177bea4651a0b228f65772780ae20d3003c` also passed the existing tests workflow #43177615646 and Claude Code CLI validation workflow #43177615751.
+- CLI remains pinned to v2.1.322; `claude plugin validate . --strict` passed on the final PR head. The missing-icon warning remains non-blocking.
+- Live authenticated Claude/Codex client behavior and remote MCP interoperability remain NOT YET MEASURED / NOT YET PROVEN.
